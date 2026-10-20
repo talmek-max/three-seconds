@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Three Seconds · שלוש שניות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Suez+One&family=Rubik:wght@400;500;700&family=Rubik+Mono+One&display=swap">
+<style>
+/* Layout: a night-radio console. One column; the tuning strip of 3-second cells is the hero. */
+:root{
+  --bg:#12131c;          /* studio at night */
+  --panel:#1b1d2a;
+  --panel-2:#242738;
+  --line:#33374d;
+  --fg:#ecebf4;
+  --muted:#9a9cb5;
+  --amber:#ffb43d;       /* VU-meter amber, the one loud colour */
+  --amber-dim:#5a4320;
+  --good:#5fd39a;
+  --bad:#ff6b6b;
+  --warn:#ffd36b;
+  --display:"Suez One", "Rubik", Georgia, serif;
+  --body:"Rubik", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --mono:"Rubik Mono One", "Rubik", ui-monospace, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body);min-height:100vh;
+  background-image:radial-gradient(1200px 500px at 50% -200px, #262a44 0%, transparent 70%);}
+[hidden]{display:none!important}
+.wrap{max-width:760px;margin:0 auto;padding-block:24px 64px;
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand h1{font:400 clamp(28px,6vw,40px)/1 var(--display);margin:0;letter-spacing:.01em}
+.brand h1 b{color:var(--amber);font-weight:400}
+.brand small{color:var(--muted);font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{background:none;border:0;color:var(--muted);font:500 13px var(--body);padding:6px 12px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--panel-2);color:var(--fg)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:18px}
+.panel h2{font:400 22px/1.2 var(--display);margin:0}
+.field{display:flex;flex-direction:column;gap:8px}
+.label{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--panel-2);border:1px solid var(--line);color:var(--fg);border-radius:999px;padding:8px 14px;font:500 14px var(--body);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--amber);border-color:var(--amber);color:#1a1205}
+.chip:focus-visible,.btn:focus-visible,input:focus-visible,.opt:focus-visible,.lang button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.note{font-size:13px;color:var(--muted);margin:0}
+.note.warn{color:var(--warn)}
+.btn{border:0;border-radius:12px;padding:12px 18px;font:700 15px var(--body);cursor:pointer;background:var(--panel-2);color:var(--fg);border:1px solid var(--line)}
+.btn.primary{background:var(--amber);color:#1a1205;border-color:var(--amber)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row .grow{flex:1}
+
+/* scoreboard */
+.scorebar{display:flex;gap:10px;flex-wrap:wrap}
+.stat{flex:1;min-width:90px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.stat .v{font:400 22px/1.1 var(--mono);font-variant-numeric:tabular-nums}
+.stat .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+/* tuning strip */
+.tuner{display:flex;flex-direction:column;gap:10px}
+.cells{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;direction:ltr}
+.cell{height:44px;border-radius:6px;background:var(--panel-2);border:1px solid var(--line);position:relative;overflow:hidden}
+.cell.on{background:var(--amber-dim);border-color:var(--amber)}
+.cell .fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--amber)}
+.ticks{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;direction:ltr;font:400 10px var(--mono);color:var(--muted);text-align:center}
+.controls{display:flex;gap:10px;flex-wrap:wrap}
+.controls .btn{flex:1;min-width:120px}
+.play-btn{font-size:17px}
+
+/* player */
+.player{position:relative;border-radius:12px;overflow:hidden;height:80px;background:#000}
+.player iframe{display:block}
+.mask{position:absolute;inset:0;background:repeating-linear-gradient(90deg,var(--panel-2) 0 8px,var(--panel) 8px 16px);
+  display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;letter-spacing:.12em;text-transform:uppercase;z-index:2}
+
+/* answers */
+.answers{display:grid;gap:12px}
+.connect{display:flex;flex-direction:column;gap:12px;border:1px dashed var(--line);border-radius:12px;padding:14px}
+.connect input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--fg);padding:10px 12px;font:15px var(--body)}
+.connect code{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;overflow-wrap:anywhere;min-width:0;direction:ltr;text-align:left}
+.note.ok{color:var(--good)}
+.answers input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--fg);padding:12px 14px;font:16px var(--body)}
+.mc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.opt{background:var(--bg);border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:10px 12px;font:500 14px var(--body);text-align:start;cursor:pointer;min-width:0;overflow-wrap:anywhere}
+.opt[aria-pressed="true"]{border-color:var(--amber);background:var(--amber-dim)}
+.mc.years{grid-template-columns:repeat(4,minmax(0,1fr))}
+.mc.years .opt{text-align:center;font-family:var(--mono);font-size:13px}
+
+/* result */
+.result{display:grid;gap:8px}
+.res{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.res .what{min-width:0}
+.res .what .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.res .what .ans{font-weight:700;overflow-wrap:anywhere}
+.res .what .yours{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.res .pts{font:400 14px var(--mono);white-space:nowrap}
+.res.ok{border-color:color-mix(in srgb,var(--good) 60%,var(--line))}
+.res.ok .pts{color:var(--good)}
+.res.half{border-color:color-mix(in srgb,var(--warn) 60%,var(--line))}
+.res.half .pts{color:var(--warn)}
+.res.no .pts{color:var(--bad)}
+.round-total{display:flex;justify-content:space-between;font:400 18px var(--display)}
+
+.history{display:grid;gap:6px;max-height:340px;overflow:auto}
+.hrow{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:6px 0;border-bottom:1px solid var(--line)}
+.hrow span:first-child{min-width:0;overflow-wrap:anywhere}
+.hrow .pts{font-family:var(--mono);font-size:12px;white-space:nowrap}
+.big{font:400 56px/1 var(--mono);color:var(--amber);font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+@media (max-width:480px){ .cell{height:36px} .mc.years{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><h1 id="appTitle">Three <b>Seconds</b></h1><small id="appSub">Name that intro</small></div>
+    <div class="lang" role="group" aria-label="Language">
+      <button id="langEn" aria-pressed="true">English</button>
+      <button id="langHe" aria-pressed="false">עברית</button>
+    </div>
+  </header>
+
+  <!-- SETUP -->
+  <section class="panel" id="setup">
+    <h2 data-i18n="setupTitle">Set up your game</h2>
+    <div class="field"><span class="label" data-i18n="decades">Decades</span><div class="chips" id="decChips"></div></div>
+    <div class="field"><span class="label" data-i18n="music">Music</span><div class="chips" id="catChips"></div></div>
+    <div class="field"><span class="label" data-i18n="askLabel">Question per song</span><div class="chips" id="askChips"></div></div>
+    <div class="field"><span class="label" data-i18n="answerStyle">How you answer</span><div class="chips" id="modeChips"></div></div>
+    <div class="field"><span class="label" data-i18n="yearScoring">Year scoring</span><div class="chips" id="yearChips"></div></div>
+    <div class="field"><span class="label" data-i18n="rounds">Rounds</span><div class="chips" id="roundChips"></div></div>
+    <p class="note" id="poolNote"></p>
+    <div class="field"><span class="label" data-i18n="playOn">Play songs on</span><div class="chips" id="playerChips"></div></div>
+    <div class="connect" id="connectBox">
+      <p class="note" id="connStatus"></p>
+      <div id="connForm" class="field">
+        <label class="label" for="cidInput" data-i18n="cidLabel">Spotify Client ID</label>
+        <input id="cidInput" autocomplete="off" spellcheck="false" placeholder="e.g. 3f9a…">
+        <span class="label" data-i18n="redirLabel">Redirect URI (paste this into your Spotify app settings)</span>
+        <div class="row"><code id="redirUri" class="grow"></code><button type="button" class="btn" id="copyRedir" data-i18n="copy">Copy</button></div>
+      </div>
+      <div class="row"><button type="button" class="btn primary grow" id="connectBtn" data-i18n="connect">Connect Spotify</button><button type="button" class="btn" id="disconnectBtn" data-i18n="disconnect" hidden>Disconnect</button></div>
+    </div>
+    <p class="note" id="pageNote" data-i18n="loginNote">Log in to Spotify in this browser (open.spotify.com) so songs play in full from the very first second. Without a login, Spotify plays a 30-second preview that may start mid-song.</p>
+    <div class="row"><button class="btn primary grow" id="startBtn" data-i18n="start">Start game</button></div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" hidden style="display:flex;flex-direction:column;gap:20px">
+    <div class="scorebar">
+      <div class="stat"><div class="v" id="sRound">1/10</div><div class="k" data-i18n="round">Round</div></div>
+      <div class="stat"><div class="v" id="sScore">0</div><div class="k" data-i18n="score">Score</div></div>
+      <div class="stat"><div class="v" id="sStreak">0</div><div class="k" data-i18n="streak">Streak</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><span class="tag" id="roundTag"></span><span class="tag" id="clipTag"></span></div>
+      <div class="tuner">
+        <div class="cells" id="cells"></div>
+        <div class="ticks" id="ticks"></div>
+      </div>
+      <div class="controls">
+        <button class="btn primary play-btn" id="playBtn">▶ <span data-i18n="play">Play</span></button>
+        <button class="btn" id="moreBtn">+3 <span data-i18n="sec">sec</span></button>
+        <button class="btn" id="skipBtn" data-i18n="skip">Skip song</button>
+        <button class="btn" id="giveUpBtn" data-i18n="giveUp">Reveal</button>
+      </div>
+      <p class="note warn" id="playerNote" hidden></p>
+      <div class="player" id="playerBox">
+        <div id="embed"></div>
+        <div class="mask" id="mask" data-i18n="hidden">Hidden until you answer</div>
+      </div>
+    </div>
+
+    <div class="panel" id="guessPanel">
+      <h2 id="guessTitle">Your guess</h2>
+      <form class="answers" id="guessForm" autocomplete="off">
+        <div class="field" id="fSong"></div>
+        <div class="field" id="fArtist"></div>
+        <div class="field" id="fYear"></div>
+        <button class="btn primary" type="submit" data-i18n="submit">Submit answer</button>
+      </form>
+    </div>
+
+    <div class="panel" id="resultPanel" hidden>
+      <h2 id="resultTitle"></h2>
+      <div class="result" id="resultRows"></div>
+      <div class="round-total"><span data-i18n="roundPts">This round</span><span id="roundPts">0</span></div>
+      <button class="btn primary" id="nextBtn" data-i18n="next">Next song</button>
+    </div>
+  </section>
+
+  <!-- END -->
+  <section class="panel" id="end" hidden>
+    <h2 data-i18n="gameOver">Game over</h2>
+    <div><div class="big" id="finalScore">0</div><p class="note" id="finalNote"></p></div>
+    <div class="history" id="history"></div>
+    <div class="row"><button class="btn primary grow" id="againBtn" data-i18n="again">Play again</button><button class="btn" id="setupBtn" data-i18n="changeSettings">Change settings</button></div>
+  </section>
+</div>
+
+<script>
+/* ---------- song library (from Spotify) ---------- */
+const SONGS = [{"id":"0ofHAoxe9vBkTCp2UQIavz","c":"int","d":"1970s","t":"Dreams","a":"Fleetwood Mac","y":1977},{"id":"2LawezPeJhN4AWuSB0GtAU","c":"int","d":"1970s","t":"Have You Ever Seen the Rain","a":"Creedence Clearwater Revival","y":1970,"tt":["Have You Ever Seen The Rain?"],"aa":["CCR"]},{"id":"2zYzyRzz6pRmhPzyfMEC8s","c":"int","d":"1970s","t":"Highway to Hell","a":"AC/DC","y":1979,"aa":["ACDC"]},{"id":"46eu3SBuFCXWsPT39Yg3tJ","c":"int","d":"1970s","t":"Don't Stop 'Til You Get Enough","a":"Michael Jackson","y":1979,"tt":["Dont Stop Till You Get Enough"]},{"id":"0GjEhVFGZW8afUYGChu3Rr","c":"int","d":"1970s","t":"Dancing Queen","a":"ABBA","y":1976},{"id":"70C4NyhjD5OZUMzvWZ3njJ","c":"int","d":"1970s","t":"Piano Man","a":"Billy Joel","y":1973},{"id":"37Tmv4NnfQeb0ZgUC4fOJj","c":"int","d":"1970s","t":"Sultans of Swing","a":"Dire Straits","y":1978},{"id":"4gMgiXfqyzZLMhsksGmbQV","c":"int","d":"1970s","t":"Another Brick in the Wall, Pt. 2","a":"Pink Floyd","y":1979,"tt":["Another Brick in the Wall"]},{"id":"2RlgNHKcydI9sayD2Df2xp","c":"int","d":"1970s","t":"Mr. Blue Sky","a":"Electric Light Orchestra","y":1977,"tt":["Mister Blue Sky"],"aa":["ELO"]},{"id":"1QEEqeFIZktqIpPI4jSVSF","c":"int","d":"1970s","t":"More Than a Feeling","a":"Boston","y":1976},{"id":"7e89621JPkKaeDSTQ3avtg","c":"int","d":"1970s","t":"Sweet Home Alabama","a":"Lynyrd Skynyrd","y":1974},{"id":"1fDsrQ23eTAVFElUMaf38X","c":"int","d":"1970s","t":"American Pie","a":"Don McLean","y":1971},{"id":"7pKfPomDEeI4TPT6EOYjn9","c":"int","d":"1970s","t":"Imagine","a":"John Lennon","y":1971},{"id":"3gdewACMIVMEWVbyb8O9sY","c":"int","d":"1970s","t":"Rocket Man","a":"Elton John","y":1972},{"id":"07q0QVgO56EorrSGHC48y3","c":"int","d":"1970s","t":"I Was Made for Lovin' You","a":"KISS","y":1979,"tt":["I Was Made For Loving You"]},{"id":"1k1Bqnv2R0uJXQN4u6LKYt","c":"int","d":"1970s","t":"Ain't No Sunshine","a":"Bill Withers","y":1971,"tt":["Aint No Sunshine"]},{"id":"1oYYd2gnWZYrt89EBXdFiO","c":"int","d":"1970s","t":"Message in a Bottle","a":"The Police","y":1979,"aa":["Police","Sting"]},{"id":"5ChkMS8OtdzJeqyybCc9R5","c":"int","d":"1980s","t":"Billie Jean","a":"Michael Jackson","y":1982},{"id":"2v7ywbUzCgcVohHaKUcacV","c":"int","d":"1980s","t":"Like a Prayer","a":"Madonna","y":1989},{"id":"37ZJ0p5Jm13JPevGcx4SkF","c":"int","d":"1980s","t":"Livin' on a Prayer","a":"Bon Jovi","y":1986,"tt":["Living on a Prayer"]},{"id":"2WfaOiMkCvy7F5fcp2zZ8L","c":"int","d":"1980s","t":"Take On Me","a":"a-ha","y":1985,"aa":["aha"]},{"id":"7wuJGgpTNzbUyn26IOY6rj","c":"int","d":"1980s","t":"Total Eclipse of the Heart","a":"Bonnie Tyler","y":1983},{"id":"2374M0fQpWi3dLnB54qaLX","c":"int","d":"1980s","t":"Africa","a":"Toto","y":1982},{"id":"1TfqLAPs4K3s2rJMoCokcS","c":"int","d":"1980s","t":"Sweet Dreams (Are Made of This)","a":"Eurythmics","y":1983,"tt":["Sweet Dreams"],"aa":["Annie Lennox"]},{"id":"2tUBqZG2AbRi7Q0BIrVrEj","c":"int","d":"1980s","t":"I Wanna Dance with Somebody","a":"Whitney Houston","y":1987,"tt":["I Wanna Dance With Somebody (Who Loves Me)","I Want to Dance with Somebody"]},{"id":"4RvWPyQ5RL0ao9LPZeSouE","c":"int","d":"1980s","t":"Everybody Wants to Rule the World","a":"Tears for Fears","y":1985},{"id":"0GONea6G2XdnHWjNZd6zt3","c":"int","d":"1980s","t":"Summer of '69","a":"Bryan Adams","y":1984,"tt":["Summer of 69"]},{"id":"18AXbzPzBS8Y3AkgSxzJPb","c":"int","d":"1980s","t":"In the Air Tonight","a":"Phil Collins","y":1981},{"id":"3ZZq9396zv8pcn5GYVhxUi","c":"int","d":"1980s","t":"Down Under","a":"Men at Work","y":1981},{"id":"08mG3Y1vljYA6bvDt4Wqkj","c":"int","d":"1980s","t":"Back in Black","a":"AC/DC","y":1980,"aa":["ACDC"]},{"id":"5zA8vzDGqPl2AzZkEYQGKh","c":"int","d":"1980s","t":"Uptown Girl","a":"Billy Joel","y":1983},{"id":"37Q5anxoGWYdRsyeXkkNoI","c":"int","d":"1980s","t":"Heaven Is a Place on Earth","a":"Belinda Carlisle","y":1987},{"id":"2M9ro2krNb7nr7HSprkEgo","c":"int","d":"1980s","t":"Fast Car","a":"Tracy Chapman","y":1988},{"id":"1OOtq8tRnDM8kG2gqUPjAj","c":"int","d":"1980s","t":"Beat It","a":"Michael Jackson","y":1982},{"id":"1Je1IMUlBXcx1Fz0WE7oPT","c":"int","d":"1990s","t":"Wannabe","a":"Spice Girls","y":1996,"aa":["The Spice Girls"]},{"id":"2goLsvvODILDzeeiT4dAoR","c":"int","d":"1990s","t":"Believe","a":"Cher","y":1998},{"id":"7ygpwy2qP3NbrxVkHvUhXY","c":"int","d":"1990s","t":"Wonderwall","a":"Oasis","y":1995},{"id":"31AOj9sFz2gM0O3hMARRBx","c":"int","d":"1990s","t":"Losing My Religion","a":"R.E.M.","y":1991,"aa":["REM"]},{"id":"47BBI51FKFwOMlIiX6m8ya","c":"int","d":"1990s","t":"I Want It That Way","a":"Backstreet Boys","y":1999,"aa":["BSB"]},{"id":"57iDDD9N9tTWe75x6qhStw","c":"int","d":"1990s","t":"Bitter Sweet Symphony","a":"The Verve","y":1997,"tt":["Bittersweet Symphony"],"aa":["Verve"]},{"id":"6Qyc6fS4DsZjB2mRW9DsQs","c":"int","d":"1990s","t":"Iris","a":"Goo Goo Dolls","y":1998,"aa":["The Goo Goo Dolls"]},{"id":"1KGi9sZVMeszgZOWivFpxs","c":"int","d":"1990s","t":"No Scrubs","a":"TLC","y":1999},{"id":"3d9DChrdc6BOeFsbrZ3Is0","c":"int","d":"1990s","t":"Under the Bridge","a":"Red Hot Chili Peppers","y":1991,"aa":["RHCP","Chili Peppers"]},{"id":"1d6KS9GH06JAd19uiBy9IE","c":"int","d":"1990s","t":"Ironic","a":"Alanis Morissette","y":1995,"aa":["Alanis"]},{"id":"1FTSo4v6BOZH9QxKc3MbVM","c":"int","d":"1990s","t":"Song 2","a":"Blur","y":1997},{"id":"6L89mwZXSOwYl76YXfX13s","c":"int","d":"1990s","t":"Basket Case","a":"Green Day","y":1994},{"id":"3ovjw5HZZv43SxTwApooCM","c":"int","d":"1990s","t":"Wind of Change","a":"Scorpions","y":1990},{"id":"0Q0IVlqMV64kNLlwjPj0Hl","c":"int","d":"1990s","t":"Killing Me Softly with His Song","a":"Fugees","y":1996,"tt":["Killing Me Softly"],"aa":["Lauryn Hill","The Fugees"]},{"id":"1Jaah2tmN9Hv81A87KZ1MU","c":"int","d":"1990s","t":"Torn","a":"Natalie Imbruglia","y":1997},{"id":"3cfOd4CMv2snFaKAnMdnvK","c":"int","d":"1990s","t":"All Star","a":"Smash Mouth","y":1999},{"id":"3YRCqOhFifThpSRFJ1VWFM","c":"int","d":"1990s","t":"November Rain","a":"Guns N' Roses","y":1991,"aa":["Guns and Roses","GNR"]},{"id":"6naxalmIoLFWR0siv8dnQQ","c":"int","d":"2000s","t":"Oops!... I Did It Again","a":"Britney Spears","y":2000,"tt":["Oops I Did It Again"],"aa":["Britney"]},{"id":"3850dYVgOFIXJh5U4BFEWH","c":"int","d":"2000s","t":"Hung Up","a":"Madonna","y":2005},{"id":"3xrn9i8zhNZsTtcoWgQEAd","c":"int","d":"2000s","t":"Since U Been Gone","a":"Kelly Clarkson","y":2004,"tt":["Since You Been Gone"]},{"id":"3AJwUDP919kvQ9QcozQPxg","c":"int","d":"2000s","t":"Yellow","a":"Coldplay","y":2000},{"id":"60a0Rd6pjrkxjPbaKzXjfq","c":"int","d":"2000s","t":"In the End","a":"Linkin Park","y":2000},{"id":"0COqiPhxzoWICwFCS4eZcp","c":"int","d":"2000s","t":"Bring Me to Life","a":"Evanescence","y":2003},{"id":"0d28khcov6AiegSCpG5TuT","c":"int","d":"2000s","t":"Feel Good Inc.","a":"Gorillaz","y":2005,"tt":["Feel Good Inc","Feel Good"]},{"id":"7lQ8MOhq6IN2w8EYcFNSUk","c":"int","d":"2000s","t":"Without Me","a":"Eminem","y":2002},{"id":"2gam98EZKrF9XuOkU13ApN","c":"int","d":"2000s","t":"Promiscuous","a":"Nelly Furtado","y":2006,"aa":["Timbaland"]},{"id":"49FYlytm3dAAraYgpoJZux","c":"int","d":"2000s","t":"Umbrella","a":"Rihanna","y":2007,"aa":["Jay-Z"]},{"id":"0SiywuOBRcynK0uKGWdCnn","c":"int","d":"2000s","t":"Bad Romance","a":"Lady Gaga","y":2009},{"id":"1mea3bSkSGXuIRvnydlB5b","c":"int","d":"2000s","t":"Viva la Vida","a":"Coldplay","y":2008},{"id":"0ntQJM78wzOLVeCUAW7Y45","c":"int","d":"2000s","t":"Sex on Fire","a":"Kings of Leon","y":2008},{"id":"0O45fw2L5vsWpdsOdXwNAR","c":"int","d":"2000s","t":"SexyBack","a":"Justin Timberlake","y":2006,"tt":["Sexy Back"],"aa":["JT","Timbaland"]},{"id":"2igwFfvr1OAGX9SKDCPBwO","c":"int","d":"2000s","t":"Empire State of Mind","a":"Jay-Z","y":2009,"aa":["Alicia Keys","Jay Z"]},{"id":"00Mb3DuaIH1kjrwOku9CGU","c":"int","d":"2000s","t":"Sk8er Boi","a":"Avril Lavigne","y":2002,"tt":["Skater Boy","Sk8er Boy"]},{"id":"1SKPmfSYaPsETbRHaiA18G","c":"int","d":"2000s","t":"Somewhere Only We Know","a":"Keane","y":2004},{"id":"7qiZfU4dY1lWllzX7mPBI3","c":"int","d":"2010s","t":"Shape of You","a":"Ed Sheeran","y":2017},{"id":"32OlwWuMpZ6b0aN2RZOeMS","c":"int","d":"2010s","t":"Uptown Funk","a":"Mark Ronson","y":2014,"aa":["Bruno Mars"]},{"id":"2tpWsVSb9UEmDRxAl1zhX1","c":"int","d":"2010s","t":"Counting Stars","a":"OneRepublic","y":2013,"aa":["One Republic"]},{"id":"3w3y8KPTfNeOKPiqUTakBh","c":"int","d":"2010s","t":"Locked Out of Heaven","a":"Bruno Mars","y":2012},{"id":"7MXVkk9YMctZqd1Srtv4MB","c":"int","d":"2010s","t":"Starboy","a":"The Weeknd","y":2016,"aa":["Weeknd","Daft Punk"]},{"id":"1zi7xx7UVEFkmKfv06H8x0","c":"int","d":"2010s","t":"One Dance","a":"Drake","y":2016,"aa":["Wizkid"]},{"id":"5FVd6KXrgO9B3JPmC8OPst","c":"int","d":"2010s","t":"Do I Wanna Know?","a":"Arctic Monkeys","y":2013,"tt":["Do I Wanna Know"]},{"id":"7BKLCZ1jbUBVqRi2FVlTVw","c":"int","d":"2010s","t":"Closer","a":"The Chainsmokers","y":2016,"aa":["Chainsmokers","Halsey"]},{"id":"0pqnGHJpmpxLKifKRmU6WP","c":"int","d":"2010s","t":"Believer","a":"Imagine Dragons","y":2017},{"id":"3CRDbSIZ4r5MsZ0YwxuEkn","c":"int","d":"2010s","t":"Stressed Out","a":"Twenty One Pilots","y":2015,"aa":["21 Pilots"]},{"id":"15JINEqzVMv3SvJTAXAKED","c":"int","d":"2010s","t":"Love the Way You Lie","a":"Eminem","y":2010,"aa":["Rihanna"]},{"id":"4h8VwCb1MTGoLKueQ1WgbD","c":"int","d":"2010s","t":"Wake Me Up","a":"Avicii","y":2013},{"id":"0TDLuuLlV54CkRRUOahJb4","c":"int","d":"2010s","t":"Titanium","a":"David Guetta","y":2011,"aa":["Sia"]},{"id":"6habFhsOp2NvshLv26DqMb","c":"int","d":"2010s","t":"Despacito","a":"Luis Fonsi","y":2017,"aa":["Daddy Yankee"]},{"id":"60nZcImufyMA1MKQY3dcCH","c":"int","d":"2010s","t":"Happy","a":"Pharrell Williams","y":2013,"aa":["Pharrell"]},{"id":"0cqRj7pUJDkTCEsJkx8snD","c":"int","d":"2010s","t":"Shake It Off","a":"Taylor Swift","y":2014},{"id":"4VrWlk8IQxevMvERoX08iC","c":"int","d":"2010s","t":"Chandelier","a":"Sia","y":2014},{"id":"2qSkIjg1o9h3YT9RAgYN75","c":"int","d":"2020s","t":"Espresso","a":"Sabrina Carpenter","y":2024},{"id":"5wANPM4fQCJwkGd4rN57mH","c":"int","d":"2020s","t":"drivers license","a":"Olivia Rodrigo","y":2021,"tt":["Drivers License"]},{"id":"6dOtVTDdiauQNBQEDOtlAB","c":"int","d":"2020s","t":"BIRDS OF A FEATHER","a":"Billie Eilish","y":2024,"tt":["Birds of a Feather"]},{"id":"2plbrEY59IikOBgBGLjaoe","c":"int","d":"2020s","t":"Die with a Smile","a":"Lady Gaga","y":2024,"aa":["Bruno Mars"]},{"id":"1CPZ5BxNNd0n0nF4Orb9JS","c":"int","d":"2020s","t":"Golden","a":"HUNTR/X","y":2025,"aa":["KPop Demon Hunters","Huntrix","EJAE"]},{"id":"1IHWl5LamUGEuP4ozKQSXZ","c":"int","d":"2020s","t":"Tití Me Preguntó","a":"Bad Bunny","y":2022,"tt":["Titi Me Pregunto"]},{"id":"3xkHsmpQCBMytMJNiDf3Ii","c":"int","d":"2020s","t":"Beautiful Things","a":"Benson Boone","y":2024},{"id":"3USxtqRwSYz57Ewm6wWRMp","c":"int","d":"2020s","t":"Heat Waves","a":"Glass Animals","y":2020},{"id":"0WbMK4wrZ1wFSty9F7FCgu","c":"int","d":"2020s","t":"Good Luck, Babe!","a":"Chappell Roan","y":2024,"tt":["Good Luck Babe"]},{"id":"17phhZDn6oGtzMe56NuWvj","c":"int","d":"2020s","t":"Lose Control","a":"Teddy Swims","y":2023},{"id":"0mflMxspEfB0VbI1kyLiAv","c":"int","d":"2020s","t":"Stick Season","a":"Noah Kahan","y":2022},{"id":"6AI3ezQ4o3HUoP6Dhudph3","c":"int","d":"2020s","t":"Not Like Us","a":"Kendrick Lamar","y":2024},{"id":"4R2kfaDFhslZEMJqAFNpdd","c":"int","d":"2020s","t":"cardigan","a":"Taylor Swift","y":2020,"tt":["Cardigan"]},{"id":"3DarAbFujv6eYNliUTyqtz","c":"int","d":"2020s","t":"Kiss Me More","a":"Doja Cat","y":2021,"aa":["SZA"]},{"id":"6qqrTXSdwiJaq8SO0X2lSe","c":"int","d":"2020s","t":"Ordinary","a":"Alex Warren","y":2025},{"id":"4uUG5RXrOk84mYEfFvj3cK","c":"int","d":"2020s","t":"I'm Good (Blue)","a":"David Guetta","y":2022,"tt":["Im Good","I'm Good"],"aa":["Bebe Rexha"]},{"id":"4iZ4pt7kvcaH6Yo8UoZ4s2","c":"int","d":"2020s","t":"Snooze","a":"SZA","y":2022},{"id":"1j5u9yFcJcxZVI8STDdH8t","c":"il","d":"1970s","t":"כשאלוהים אמר בפעם הראשונה","a":"מתי כספי","y":1974,"tt":["Kshe'Elohim Amar Bapa'am Harishona"],"aa":["Matti Caspi","Mati Caspi"]},{"id":"4f7717COmPLIC7ZIhFNTVd","c":"il","d":"1970s","t":"איך זה שכוכב","a":"מתי כספי","y":1974,"tt":["Eich Ze She'Kochav"],"aa":["Matti Caspi","Mati Caspi"]},{"id":"29rowdTtllfsHhOHMSfVRg","c":"il","d":"1970s","t":"ברית עולם","a":"מתי כספי","y":1976,"tt":["Brit Olam"],"aa":["Matti Caspi","Mati Caspi"]},{"id":"6abcTCN1mtm2bYPSm95zjB","c":"il","d":"1970s","t":"גבר הולך לאיבוד","a":"שלמה ארצי","y":1978,"tt":["Gever Holech Le'ibud"],"aa":["Shlomo Artzi"]},{"id":"5POyW4zYGdIxyXgjAa3kep","c":"il","d":"1970s","t":"משירי ארץ אהבתי","a":"חוה אלברשטיין","y":1970,"tt":["Mishirei Eretz Ahavati"],"aa":["Chava Alberstein"]},{"id":"4ISAGgrTYc0AOoE71Lns54","c":"il","d":"1970s","t":"כמו צמח בר","a":"חוה אלברשטיין","y":1975,"tt":["Kmo Tzemach Bar"],"aa":["Chava Alberstein"]},{"id":"2zqnBfsROZ7YLx7MT0o6IM","c":"il","d":"1970s","t":"היא כל כך יפה","a":"כוורת","y":1975,"tt":["Hi Kol Kach Yafa"],"aa":["Kaveret"]},{"id":"2I1HzYbOb3gnybtJ6Ez7P4","c":"il","d":"1970s","t":"יו יה","a":"כוורת","y":1973,"tt":["Yo Ya"],"aa":["Kaveret"]},{"id":"5WESvrjEQaqqBBHCbJSJ9a","c":"il","d":"1970s","t":"שיר המכולת","a":"כוורת","y":1973,"tt":["Shir HaMakolet"],"aa":["Kaveret"]},{"id":"435P50NecTcUjpRi6QCe5m","c":"il","d":"1970s","t":"רוני","a":"גזוז","y":1972,"tt":["Roni"],"aa":["Gazoz"]},{"id":"4BCVPpkSnWKJuTClJMhpEy","c":"il","d":"1970s","t":"דמעות של מלאכים","a":"יהודית רביץ","y":1979,"tt":["Dmaot Shel Malachim"],"aa":["Yehudit Ravitz","יוני רכטר","Yoni Rechter"]},{"id":"6MdzyjEozzeGUfLxZfFzAz","c":"il","d":"1970s","t":"סמבה ברגל שמאל","a":"שש-שש","y":1977,"tt":["Samba Beregel Smol"],"aa":["Sheshet","ששת"]},{"id":"5ezprryiM8Esx31GjYCLcr","c":"il","d":"1970s","t":"יהיה טוב","a":"דוד ברוזה","y":1977,"tt":["Yihye Tov"],"aa":["David Broza"]},{"id":"1eTDZs8bXBhaiha1IFECuU","c":"il","d":"1970s","t":"רוזה מרציפן","a":"שלמה גרוניך","y":1971,"tt":["Roza Marzipan"],"aa":["Shlomo Gronich"]},{"id":"73p7hWDxEwq86Oo45kdMww","c":"il","d":"1970s","t":"קפה אצל ברטה","a":"הנשמות הטהורות","y":1974,"tt":["Cafe Etzel Berta"],"aa":["The Pure Souls"]},{"id":"2qKbVWJ12e6QbYvbXi3ghZ","c":"il","d":"1980s","t":"זמנך עבר","a":"אהוד בנאי","y":1987,"tt":["Zmanech Avar"],"aa":["Ehud Banai"]},{"id":"1PR4MgOUX5WZjVzSlncsWD","c":"il","d":"1980s","t":"מערבה מכאן","a":"ריקי גל","y":1987,"tt":["Ma'arava Mikan"],"aa":["Riki Gal"]},{"id":"6Cv7NuNWXLfjmYo0ikVTeq","c":"il","d":"1980s","t":"אלף כבאים","a":"דודא","y":1980,"tt":["Elef Kaba'im"],"aa":["Doda"]},{"id":"7svHo9pBJrn7kL0uZGimp3","c":"il","d":"1980s","t":"לתת","a":"בועז שרעבי","y":1987,"tt":["Latet"],"aa":["Boaz Sharabi"]},{"id":"4WcuprO2yxiVVTAEfll7Cl","c":"il","d":"1980s","t":"בא לשכונה בחור חדש","a":"אלון אולארצ'יק","y":1985,"tt":["Ba Lashchuna Bachur Chadash"],"aa":["Alon Oleartchik","אלון אולרצ'יק"]},{"id":"0sJ748uaRZXz8lGRH8mpZH","c":"il","d":"1980s","t":"תרקוד","a":"שלמה ארצי","y":1984,"tt":["Tirkod"],"aa":["Shlomo Artzi"]},{"id":"7ClB3ckrLcXB3B2m8EgWRK","c":"il","d":"1980s","t":"חתונה לבנה","a":"שלום חנוך","y":1981,"tt":["Chatuna Levana"],"aa":["Shalom Hanoch"]},{"id":"1uMhxFeUTll1Faa9bkyVzv","c":"il","d":"1980s","t":"גשם","a":"בנזין","y":1982,"tt":["Geshem"],"aa":["Benzin"]},{"id":"4EJSRbkrnjf20u71fKkA7u","c":"il","d":"1980s","t":"לראות אותה היום","a":"טי-סלאם","y":1981,"tt":["Lirot Ota Hayom"],"aa":["T-Slam","טי סלאם"]},{"id":"7BmJu70l6sifbmnlMe3Xzk","c":"il","d":"1980s","t":"רכבת לילה","a":"משינה","y":1985,"tt":["Rakevet Layla","Rakevet Laila"],"aa":["Mashina"]},{"id":"6E5RGUZgjwkp2JdTFxnu7g","c":"il","d":"1980s","t":"הפרח בגני","a":"זוהר ארגוב","y":1982,"tt":["HaPerach BeGani"],"aa":["Zohar Argov"]},{"id":"0zHvtfHt5DrIPVSJkJP0iG","c":"il","d":"1980s","t":"אתה לי ארץ","a":"ירדנה ארזי","y":1984,"tt":["Ata Li Eretz"],"aa":["Yardena Arazi"]},{"id":"6elkcYlAmWyLXk1VQHXr0x","c":"il","d":"1980s","t":"גשם","a":"מאיר בנאי","y":1987,"tt":["Geshem"],"aa":["Meir Banai"]},{"id":"3gjbrj7nzQO1PmcF0uajGT","c":"il","d":"1980s","t":"אם ננעלו","a":"עפרה חזה","y":1988,"tt":["Im Nin'alu","Im Ninalu"],"aa":["Ofra Haza"]},{"id":"7BWcR0nayNqCC8i47dQHX5","c":"il","d":"1980s","t":"ילדים של החיים","a":"שלום חנוך","y":1983,"tt":["Yeladim Shel HaChaim"],"aa":["Shalom Hanoch"]},{"id":"4drEiACejH0hg92d6bWgNB","c":"il","d":"1980s","t":"תנו לי רוקנרול","a":"טי-סלאם","y":1981,"tt":["Tnu Li Rock'n'Roll","תנו לי רוקנ'רול"],"aa":["T-Slam","טי סלאם"]},{"id":"0Dpas1K5IXpSs5HmJtYtfR","c":"il","d":"1990s","t":"אחלה עולם","a":"גידי גוב","y":1995,"tt":["Achla Olam"],"aa":["Gidi Gov","מאור כהן","Maor Cohen"]},{"id":"1DAgnZ0yxTe3o0xXRQKaww","c":"il","d":"1990s","t":"רואה לך בעיניים","a":"אתי אנקרי","y":1990,"tt":["Roa Lach Ba'einayim"],"aa":["Etti Ankri","Ety Ankri"]},{"id":"74glJwhwIYc3xAH1gAown5","c":"il","d":"1990s","t":"לך תתרגל איתה","a":"אתי אנקרי","y":1990,"tt":["Lech Titragel Ita"],"aa":["Etti Ankri","Ety Ankri"]},{"id":"0mFV3pv2Ya4mb4LnQSuVkK","c":"il","d":"1990s","t":"יום ללא מילים","a":"אלון אולארצ'יק","y":1993,"tt":["Yom Lelo Milim"],"aa":["Alon Oleartchik","אלון אולרצ'יק"]},{"id":"5AIHbV6mWmuVcEdwEyiE9k","c":"il","d":"1990s","t":"אתה פה חסר לי","a":"נורית גלרון","y":1992,"tt":["Ata Po Chaser Li"],"aa":["Nurit Galron"]},{"id":"33aQ89S5ucoHGhjgK224Xa","c":"il","d":"1990s","t":"עכשיו מעונן","a":"אביב גפן","y":1993,"tt":["Achshav Me'unan"],"aa":["Aviv Geffen"]},{"id":"625noXE0dE1lOaJWkl2qI3","c":"il","d":"1990s","t":"אהבנו","a":"אביב גפן","y":1995,"tt":["Ahavnu"],"aa":["Aviv Geffen"]},{"id":"7c9CYjE2PqTqKhL6N7nNLZ","c":"il","d":"1990s","t":"איזו מין ילדה","a":"יהודית רביץ","y":1997,"tt":["Eizo Min Yalda"],"aa":["Yehudit Ravitz"]},{"id":"6OfESu7IK5R1V1liXtJrfK","c":"il","d":"1990s","t":"אז למה לי פוליטיקה עכשיו","a":"משינה","y":1990,"tt":["Az Lama Li Politika Achshav"],"aa":["Mashina"]},{"id":"4FegVARMOcCxc3TULHunKN","c":"il","d":"1990s","t":"הכוכבים דולקים על אש קטנה","a":"משינה","y":1990,"tt":["HaKochavim Dolkim Al Esh Ktana"],"aa":["Mashina"]},{"id":"7MPL2SHEtfpWlxFyEwQG2V","c":"il","d":"1990s","t":"נגעה בשמיים","a":"משינה","y":1993,"tt":["Nag'a BaShamayim"],"aa":["Mashina"]},{"id":"1KSWIamqAOsPkrAcv51jLo","c":"il","d":"1990s","t":"יש לי סיכוי","a":"אביתר בנאי","y":1997,"tt":["Yesh Li Sikui"],"aa":["Eviatar Banai"]},{"id":"2qw0Iqek2RMDGDipNXAFV0","c":"il","d":"1990s","t":"אהבה קצרה","a":"מאיר בנאי","y":1992,"tt":["Ahava Ktzara"],"aa":["Meir Banai"]},{"id":"3COwzwY3DFxOqm75BvmuJt","c":"il","d":"1990s","t":"פלורנטין","a":"אהוד בנאי","y":1992,"tt":["Florentin"],"aa":["Ehud Banai"]},{"id":"64ytSB0mJV5vhcZA3yS54Q","c":"il","d":"1990s","t":"תותים","a":"אתניקס","y":1992,"tt":["Tutim"],"aa":["Ethnix"]},{"id":"11xqZEsrLKA8jW0rxvHpY6","c":"il","d":"1990s","t":"היא לא תשוב","a":"אתניקס","y":1996,"tt":["Hi Lo Tashuv"],"aa":["Ethnix"]},{"id":"5q9aD72W6ENdCFR2XSG8HQ","c":"il","d":"1990s","t":"טיפ טיפה","a":"אהוד בנאי","y":1998,"tt":["Tip Tipa"],"aa":["Ehud Banai"]},{"id":"0WkKSJiOHumAHleapC5PKt","c":"il","d":"2000s","t":"מתנות","a":"אביתר בנאי","y":2005,"tt":["Matanot"],"aa":["Eviatar Banai"]},{"id":"3iUQdM8C1mFadBfRxO9Lg9","c":"il","d":"2000s","t":"בשבילה אתה מלך העולם","a":"שלמה ארצי","y":2000,"tt":["Bishvila Ata Melech HaOlam"],"aa":["Shlomo Artzi"]},{"id":"7amdeu3NNZF8YQzSW4id3Q","c":"il","d":"2000s","t":"יפיופה","a":"אייל גולן","y":2009,"tt":["Yafyufa"],"aa":["Eyal Golan"]},{"id":"5qrSutrxLvp0rWKLPP4MC7","c":"il","d":"2000s","t":"קח את הכל","a":"שרית חדד","y":2000,"tt":["Kach Et HaKol"],"aa":["Sarit Hadad"]},{"id":"0ABeqv1dl9yrdZm5XCTj1q","c":"il","d":"2000s","t":"בחום של תל אביב","a":"שרית חדד","y":2004,"tt":["Bachom Shel Tel Aviv"],"aa":["Sarit Hadad"]},{"id":"0PuOGWvprX8jTodOX9mQsd","c":"il","d":"2000s","t":"בואי","a":"הפרויקט של עידן רייכל","y":2002,"tt":["Bo'i","Boi"],"aa":["Idan Raichel","עידן רייכל","The Idan Raichel Project"]},{"id":"44iqKPRASGlpZOvqw0SNoD","c":"il","d":"2000s","t":"מכל האהבות","a":"הפרויקט של עידן רייכל","y":2005,"tt":["Mikol HaAhavot"],"aa":["Idan Raichel","עידן רייכל","The Idan Raichel Project"]},{"id":"60p7XJ6wEwNIOv3nQjSGFQ","c":"il","d":"2000s","t":"באה אליכם","a":"מירי מסיקה","y":2005,"tt":["Ba'a Aleichem"],"aa":["Miri Mesika"]},{"id":"0kz1BWeXgQHPb6LkuQ9zkw","c":"il","d":"2000s","t":"לשם","a":"מירי מסיקה","y":2005,"tt":["Lesham"],"aa":["Miri Mesika"]},{"id":"2HhPEsfPA1jaUswy1cgcwy","c":"il","d":"2000s","t":"שמעון השכן","a":"קרן פלס","y":2006,"tt":["Shimon HaShachen"],"aa":["Keren Peles"]},{"id":"333U04rx1EiS06Z4pQZiD1","c":"il","d":"2000s","t":"פיז'ו 92","a":"קרן פלס","y":2008,"tt":["Peugeot 92","פיזו 92"],"aa":["Keren Peles"]},{"id":"6Gs8IwEi1yvYbJTYfFUAMe","c":"il","d":"2000s","t":"המתוקות האחרונות","a":"אריק ברמן","y":2006,"tt":["HaMetukot HaAcharonot"],"aa":["Eric Berman"]},{"id":"3pOvAeGU31McxYFxGIY3qP","c":"il","d":"2000s","t":"לומדת לעוף","a":"דנה ברגר","y":2000,"tt":["Lomedet La'uf"],"aa":["Dana Berger"]},{"id":"74n43wrEL9gZwF4auamsEV","c":"il","d":"2000s","t":"מדברים על שלום","a":"מוקי","y":2002,"tt":["Medabrim Al Shalom"],"aa":["Mooki","Muki"]},{"id":"1bBZpy8zQ6xeFsWMmQJ3vV","c":"il","d":"2000s","t":"הזמנה לחתונה","a":"אורי בנאי","y":2000,"tt":["Hazmana LeChatuna"],"aa":["Uri Banai"]},{"id":"6RLQXtGsWZZsDd3Sa5swwF","c":"il","d":"2000s","t":"כשהלב בוכה","a":"שרית חדד","y":2001,"tt":["Kshe'Halev Boche"],"aa":["Sarit Hadad"]},{"id":"5iR7JBTxNtFQtPcbXkp1aW","c":"il","d":"2000s","t":"כמו עפיפון","a":"דני סנדרסון","y":2001,"tt":["Kmo Afifon"],"aa":["Danny Sanderson","יהודית רביץ","Yehudit Ravitz"]},{"id":"2FMwWEcq2uWnc6ILvodlta","c":"il","d":"2000s","t":"מעליות","a":"דודו טסה","y":2006,"tt":["Ma'aliyot"],"aa":["Dudu Tassa","רוני אלטר","Roni Alter"]},{"id":"0przrkdYizS54ElJCPUbpT","c":"il","d":"2010s","t":"מה אתה רוצה ממני","a":"חנן בן ארי","y":2018,"tt":["Ma Ata Rotze Mimeni"],"aa":["Hanan Ben Ari"]},{"id":"0oqzgbjKt1EtjnvMX9ADwd","c":"il","d":"2010s","t":"רצים באוויר","a":"גיא ויהל","y":2013,"tt":["Ratzim BaAvir"],"aa":["Guy & Yahel","Guy and Yahel"]},{"id":"5HhVbTC6HGflJs0I2LHHxf","c":"il","d":"2010s","t":"רציתי","a":"עדן בן זקן","y":2018,"tt":["Ratziti"],"aa":["Eden Ben Zaken"]},{"id":"2aOdlTCwMRvM7pQlR8gc1W","c":"il","d":"2010s","t":"מיאמי","a":"אליעד","y":2016,"tt":["Miami"],"aa":["Eliad","אליעד נחום"]},{"id":"1omroMi99NAJhJuj0K8Bnj","c":"il","d":"2010s","t":"ויקיפדיה","a":"חנן בן ארי","y":2018,"tt":["Wikipedia"],"aa":["Hanan Ben Ari"]},{"id":"57sAhrN90APL8WXBihfXwg","c":"il","d":"2010s","t":"26","a":"נתן גושן","y":2017,"tt":["Esrim VeShesh","עשרים ושש"],"aa":["Nathan Goshen","Natan Goshen"]},{"id":"7Ck421SAROdN0Q6RXMbic7","c":"il","d":"2010s","t":"הלב שלי","a":"ישי ריבו","y":2019,"tt":["HaLev Sheli"],"aa":["Ishay Ribo"]},{"id":"63J6CXAPoDgcb9mWYYB6Ye","c":"il","d":"2010s","t":"שדות","a":"נרקיס","y":2017,"tt":["Sadot"],"aa":["Narkis"]},{"id":"6z6qswe3H3s5OCzzP02AVB","c":"il","d":"2010s","t":"לב חופשי","a":"מוקי","y":2014,"tt":["Lev Chofshi"],"aa":["Mooki","Muki"]},{"id":"3Bxg5fgGbPwgZDE9ag5Pb2","c":"il","d":"2010s","t":"נעים עכשיו","a":"אלאי בוטנר וילדי החוץ","y":2013,"tt":["Na'im Achshav"],"aa":["Elai Botner","אלאי בוטנר"]},{"id":"7o6UDPFWtYrjUZnRvi1dvO","c":"il","d":"2010s","t":"איך אפשר","a":"ג'יין בורדו","y":2014,"tt":["Eich Efshar"],"aa":["Jane Bordeaux"]},{"id":"5Xf6oYzSxNrRlz5vdNfNSS","c":"il","d":"2010s","t":"מילים","a":"הראל סקעת","y":2010,"tt":["Milim"],"aa":["Harel Skaat"]},{"id":"2X8mBXrZ6HJPCgKAzC87k5","c":"il","d":"2010s","t":"כאב של לוחמים","a":"עידן עמדי","y":2011,"tt":["Ke'ev Shel Lochamim"],"aa":["Idan Amedi"]},{"id":"1FV7Uc4Tjzgw1wvZBPEM4s","c":"il","d":"2010s","t":"הופה","a":"עומר אדם","y":2011,"tt":["Hopa"],"aa":["Omer Adam"]},{"id":"3NYqUxgU0z8ed9MHzymIqm","c":"il","d":"2010s","t":"השמלה ממדריד","a":"מוניקה סקס","y":2011,"tt":["HaSimla MiMadrid"],"aa":["Monica Sex"]},{"id":"6VO6JrvcuGMfPOQgT6kSGE","c":"il","d":"2010s","t":"Toy","a":"נטע","y":2018,"tt":["טוי"],"aa":["Netta","נטע ברזילי","Netta Barzilai"]},{"id":"4cPWvSUIgZv6I2FfWEwCgj","c":"il","d":"2010s","t":"טודו בום","a":"סטטיק ובן אל","y":2017,"tt":["Tudo Bom"],"aa":["Static & Ben El","Static and Ben El","סטטיק","בן אל"]},{"id":"5e6drWIXYtTwW6EFOwTU65","c":"il","d":"2020s","t":"ילדה מטורפת","a":"בר צברי","y":2026,"tt":["Yalda Metorefet"],"aa":["Bar Tzabary"]},{"id":"1RGW8pkRNuu09XDdxPF5cm","c":"il","d":"2020s","t":"פאפית","a":"אודיה","y":2026,"tt":["Papit"],"aa":["Odeya"]},{"id":"7sYnUihJysp9eSHUTFq9EP","c":"il","d":"2020s","t":"דאון","a":"אושר כהן","y":2026,"tt":["Down"],"aa":["Osher Cohen"]},{"id":"6MwsuFL115vgX9mCHlTZyU","c":"il","d":"2020s","t":"הלוואי","a":"פאר טסי","y":2026,"tt":["Halevai"],"aa":["Peer Tasi","חנן בן ארי","Hanan Ben Ari"]},{"id":"783Gugq5q7JvaMANrNRnCA","c":"il","d":"2020s","t":"לאב סונג","a":"נועה קירל","y":2026,"tt":["Love Song"],"aa":["Noa Kirel"]},{"id":"6xjgjdunz6KkVOGgW81FEd","c":"il","d":"2020s","t":"בית ביפו","a":"דודו טסה","y":2026,"tt":["Bayit BeYafo"],"aa":["Dudu Tassa"]},{"id":"3tT0AuW2Xjykbx5TcYv64j","c":"il","d":"2020s","t":"תקופה חרא","a":"עומר אדם","y":2026,"tt":["Tkufa Chara"],"aa":["Omer Adam"]},{"id":"6MG1IJFvf8OoZRRUTFMEAa","c":"il","d":"2020s","t":"לב לבן","a":"שולי רנד","y":2026,"tt":["Lev Lavan"],"aa":["Shuli Rand"]},{"id":"7IYAf32MmX7oCqgnGNT3g8","c":"il","d":"2020s","t":"כולם גנבים","a":"אושר כהן","y":2026,"tt":["Kulam Ganavim"],"aa":["Osher Cohen"]},{"id":"6Ma5wr8hndGkkjsk9rgVKS","c":"il","d":"2020s","t":"היא לא יודעת למה","a":"פאר טסי","y":2025,"tt":["Hi Lo Yoda'at Lama"],"aa":["Peer Tasi"]},{"id":"3IQz49JrOqwhWoSF62zMgW","c":"il","d":"2020s","t":"מחזיק לך את היד","a":"אייל גולן","y":2026,"tt":["Machzik Lach Et HaYad"],"aa":["Eyal Golan"]},{"id":"5Sn3aXG5AWFmd1ij2PTisj","c":"il","d":"2020s","t":"השיר שאת אהבת","a":"עומר אדם","y":2025,"tt":["HaShir She'At Ahavt"],"aa":["Omer Adam"]},{"id":"2Ozw7k5CLtM5W9SomrOyjw","c":"il","d":"2020s","t":"Hurricane","a":"עדן גולן","y":2024,"tt":["הוריקן"],"aa":["Eden Golan"]},{"id":"6dUregFbvUNqHP5nphqesK","c":"il","d":"2020s","t":"Unicorn","a":"נועה קירל","y":2023,"tt":["יוניקורן"],"aa":["Noa Kirel"]},{"id":"2SpEHTbUuebeLkgs9QB7Ue","c":"int","d":"1970s","t":"Jolene","y":1973,"a":"Dolly Parton"},{"id":"5ihS6UUlyQAfmp48eSkxuQ","c":"int","d":"1970s","t":"Landslide","y":1975,"a":"Fleetwood Mac"},{"id":"0VNzEY1G4GLqcNx5qaaTl6","c":"int","d":"1970s","t":"Vincent","y":1971,"a":"Don McLean"},{"id":"6NGsHLZYGVAkXTFr75WWnn","c":"int","d":"1970s","t":"She's Out of My Life","y":1979,"a":"Michael Jackson"},{"id":"77bNe6jYY8yHdP7orXrz5I","c":"int","d":"1970s","t":"I Will Always Love You","y":1974,"a":"Dolly Parton"},{"id":"0n2pjCIMKwHSXoYfEbYMfX","c":"int","d":"1970s","t":"You Are The Sunshine Of My Life","y":1972,"a":"Stevie Wonder"},{"id":"38zsOOcu31XbbYj9BIPUF1","c":"int","d":"1970s","t":"Your Song","y":1970,"a":"Elton John"},{"id":"3wM6RTAnF7IQpMFd7b9ZcL","c":"int","d":"1970s","t":"Yesterday Once More","y":1973,"a":"Carpenters"},{"id":"6l8EbYRtQMgKOyc1gcDHF9","c":"int","d":"1970s","t":"Bridge Over Troubled Water","y":1970,"a":"Simon & Garfunkel"},{"id":"7iN1s7xHE4ifF5povM6A48","c":"int","d":"1970s","t":"Let It Be","y":1970,"a":"The Beatles"},{"id":"49MHCPzvMLXhRjDantBMVH","c":"int","d":"1970s","t":"Just the Way You Are","y":1977,"a":"Billy Joel"},{"id":"3M8FzayQWtkvOhqMn2V4T2","c":"int","d":"1970s","t":"Lean on Me","y":1972,"a":"Bill Withers"},{"id":"5RdhBLmB4DyFHLglRrfx63","c":"int","d":"1970s","t":"I'll Be There","y":1970,"a":"The Jackson 5"},{"id":"5IKLwqBQG6KU6MP2zP80Nu","c":"int","d":"1970s","t":"We Are Family","y":1979,"a":"Sister Sledge"},{"id":"5RgFlk1fcClZd0Y4SGYhqH","c":"int","d":"1970s","t":"She's Always a Woman","y":1977,"a":"Billy Joel"},{"id":"5cbZDpFu1hTwaU7hDQpf13","c":"int","d":"1970s","t":"Rainy Days And Mondays","y":1971,"a":"Carpenters"},{"id":"6zC0mpGYwbNTpk9SKwh08f","c":"int","d":"1970s","t":"Wonderful Tonight","y":1977,"a":"Eric Clapton"},{"id":"2TjnCxxQRYn56Ye8gkUKiW","c":"int","d":"1970s","t":"Desperado","y":1973,"a":"Eagles"},{"id":"1vZTgn4JXWMahR8r99ug5H","c":"int","d":"1970s","t":"The Way We Were","y":1974,"a":"Barbra Streisand"},{"id":"5y8d8RHvxb0KiTa9Nq0xWp","c":"int","d":"1970s","t":"Morning Has Broken","y":1971,"a":"Yusuf / Cat Stevens"},{"id":"2ELSVi4kwWOXgxiIC592tJ","c":"int","d":"1970s","t":"We Will Rock You","y":1977,"a":"Queen"},{"id":"3wpLkju0bJy89kjgdRys0j","c":"int","d":"1970s","t":"September","y":1978,"a":"Earth","aa":["Wind & Fire"]},{"id":"3ebYtLVuV4HzEZUDcpZB9p","c":"int","d":"1970s","t":"Lovin' You","y":1975,"a":"Minnie Riperton"},{"id":"0bRXwKfigvpKZUurwqAlEh","c":"int","d":"1970s","t":"Lovely Day","y":1977,"a":"Bill Withers"},{"id":"2TxCwUlqaOH3TIyJqGgR91","c":"int","d":"1970s","t":"Mamma Mia","y":1975,"a":"ABBA"},{"id":"0saBeiGcu2dECTvAknHPzL","c":"int","d":"1970s","t":"We Are the Champions","y":1977,"a":"Queen"},{"id":"1gJOqXpRjz9GeEEwQpcujK","c":"int","d":"1970s","t":"You Are So Beautiful","y":1974,"a":"Joe Cocker"},{"id":"6zV8IpLvw0tkRSVCFQJB1y","c":"int","d":"1970s","t":"You've Got a Friend","y":1971,"a":"James Taylor"},{"id":"2M55R2A9IAhLdsCGFj8r8k","c":"int","d":"1970s","t":"I'm Every Woman","y":1978,"a":"Chaka Khan"},{"id":"6RANU8AS5ICU5PEHh8BYtH","c":"int","d":"1970s","t":"Isn't She Lovely","y":1976,"a":"Stevie Wonder"},{"id":"3lKN03PDeBnXZS7sDukRBt","c":"int","d":"1970s","t":"Money, Money, Money","y":1976,"a":"ABBA"},{"id":"2IcqY68BxP1ONPi3ME6aje","c":"int","d":"1970s","t":"Evergreen","y":1976,"a":"Barbra Streisand"},{"id":"2hitsKa8SthKhRJBXUHbIv","c":"int","d":"1970s","t":"Our House","y":1970,"a":"Crosby","aa":["Stills","Nash & Young"]},{"id":"6XfxmT5QNCXvpZA6PKfWVL","c":"int","d":"1970s","t":"Sorry Seems To Be The Hardest Word","y":1976,"a":"Elton John"},{"id":"0PDCewmZCp0P5s00bptcdd","c":"int","d":"1970s","t":"This Will Be (An Everlasting Love)","y":1975,"a":"Natalie Cole"},{"id":"7mjSHL2Eb0kAwiKbvNNyD9","c":"int","d":"1970s","t":"Wild World","y":1970,"a":"Yusuf / Cat Stevens"},{"id":"3BB9X2iano4KjZY1u9Kc12","c":"int","d":"1970s","t":"Laughter In The Rain","y":1974,"a":"Neil Sedaka"},{"id":"4YOJFyjqh8eAcbKFfv88mV","c":"int","d":"1970s","t":"Y.M.C.A.","y":1978,"a":"Village People"},{"id":"4O0sGJdqpHMaWz7KoVd7tb","c":"int","d":"1970s","t":"Diamonds And Rust","y":1975,"a":"Joan Baez"},{"id":"76TZCvJ8GitQ2FA1q5dKu0","c":"int","d":"1970s","t":"The Boxer","y":1970,"a":"Simon & Garfunkel"},{"id":"0q21FNwES2bbtcduB6kjEU","c":"int","d":"1970s","t":"Dancing in the Moonlight","y":1973,"a":"King Harvest"},{"id":"2JoZzpdeP2G6Csfdq5aLXP","c":"int","d":"1970s","t":"How Deep Is Your Love","y":1977,"a":"Bee Gees"},{"id":"683b4ikwa62JevCjwrmfg6","c":"int","d":"1970s","t":"Moondance","y":1970,"a":"Van Morrison"},{"id":"6D8kc7RO0rqBLSo2YPflJ5","c":"int","d":"1970s","t":"ABC","y":1970,"a":"The Jackson 5"},{"id":"4J0DbyODwZJcmIAiTSJfMF","c":"int","d":"1970s","t":"Annie's Song","y":1974,"a":"John Denver"},{"id":"562JrM9b7jiu8LgzV62x3o","c":"int","d":"1970s","t":"The Rose","y":1979,"a":"Bette Midler"},{"id":"7GK2KVYH8FrTC9zehmjVMd","c":"int","d":"1970s","t":"Ring My Bell","y":1979,"a":"Anita Ward"},{"id":"1YYhDizHx7PnDhAhko6cDS","c":"int","d":"1970s","t":"Take Me Home, Country Roads","y":1971,"a":"John Denver"},{"id":"6UkMcAA19lTdjs22jtB7o2","c":"int","d":"1970s","t":"Big Yellow Taxi","y":1970,"a":"Joni Mitchell"},{"id":"6OuRbvP4PgbuzBIapVzmFJ","c":"int","d":"1970s","t":"Sailing","y":1975,"a":"Rod Stewart"},{"id":"1oht5GevPN9t1T3kG1m1GO","c":"int","d":"1970s","t":"Fire and Rain","y":1970,"a":"James Taylor"},{"id":"5HQEmiV2lKnSO6qa2fsR7x","c":"int","d":"1970s","t":"I'm Not In Love","y":1975,"a":"10cc"},{"id":"1KbuhBnzMHp4eq1q6flhWd","c":"int","d":"1970s","t":"Ain't No Mountain High Enough","y":1970,"a":"Diana Ross"},{"id":"12q3V8ShACq2PSWINMc2rC","c":"int","d":"1970s","t":"It's Too Late","y":1971,"a":"Carole King"},{"id":"3qI94hINNNeb4S7xQi18lS","c":"int","d":"1970s","t":"Blame It on the Boogie","y":1978,"a":"The Jacksons"},{"id":"7GVUmCP00eSsqc4tzj1sDD","c":"int","d":"1970s","t":"Come and Get Your Love","y":1973,"a":"Redbone"},{"id":"6HSXNV0b4M4cLJ7ljgVVeh","c":"int","d":"1970s","t":"Knockin' On Heaven's Door","y":1973,"a":"Bob Dylan"},{"id":"5YSI1311X8t31PBjkBG4CZ","c":"int","d":"1970s","t":"Wuthering Heights","y":1978,"a":"Kate Bush"},{"id":"6zeE5tKyr8Nu882DQhhSQI","c":"int","d":"1970s","t":"Dust in the Wind","y":1977,"a":"Kansas"},{"id":"3D9iV6cYkYJRAPFO6DRKIE","c":"int","d":"1970s","t":"Jealous Guy","y":1971,"a":"John Lennon"},{"id":"6iMjntVYkchLBJcqsiSNYZ","c":"int","d":"1970s","t":"Wish You Were Here","y":1975,"a":"Pink Floyd"},{"id":"5FMXrphygZ4z3gVDHGWxgl","c":"int","d":"1970s","t":"Copacabana (At the Copa)","y":1978,"a":"Barry Manilow"},{"id":"1ebd5sL7yxXoR6IPCe2IIg","c":"int","d":"1970s","t":"The Hustle","y":1975,"a":"Van McCoy","aa":["The Soul City Symphony"]},{"id":"0KZodeWxqxd88F9wY1cqgs","c":"int","d":"1970s","t":"My Sweet Lord","y":1970,"a":"George Harrison"},{"id":"6r8k1vznHrzlEKYxL4dZEe","c":"int","d":"1980s","t":"La Isla Bonita","y":1986,"a":"Madonna"},{"id":"0dOg1ySSI7NkpAe89Zo0b9","c":"int","d":"1980s","t":"Born in the U.S.A.","y":1984,"a":"Bruce Springsteen"},{"id":"3HCah9Waf9Jby9gLIWN4MI","c":"int","d":"1980s","t":"Eyes Without A Face","y":1984,"a":"Billy Idol"},{"id":"4bQNusmmVudLxIiexglzh6","c":"int","d":"1980s","t":"Orinoco Flow","y":1988,"a":"Enya"},{"id":"4tcauy2xyIv1q0ckvQmc4H","c":"int","d":"1980s","t":"Material Girl","y":1984,"a":"Madonna"},{"id":"3oEkrIfXfSh9zGnE7eBzSV","c":"int","d":"1980s","t":"The Winner Takes It All","y":1980,"a":"ABBA"},{"id":"5Hyr47BBGpvOfcykSCcaw9","c":"int","d":"1980s","t":"Holding Out for a Hero","y":1984,"a":"Bonnie Tyler"},{"id":"4cgjA7B4fJBHyB9Ya2bu0t","c":"int","d":"1980s","t":"Human Nature","y":1982,"a":"Michael Jackson"},{"id":"0LpF3BJplNYWei6BmgZJwq","c":"int","d":"1980s","t":"Tom's Diner","y":1987,"a":"Suzanne Vega"},{"id":"4hObp5bmIJ3PP3cKA9K9GY","c":"int","d":"1980s","t":"Don't Worry Be Happy","y":1988,"a":"Bobby McFerrin"},{"id":"0J8A1ZVyJcRZxFNvtp6jRh","c":"int","d":"1980s","t":"One Day I'll Fly Away","y":1980,"a":"Randy Crawford"},{"id":"19Ym5Sg0YyOCa6ao21bdoG","c":"int","d":"1980s","t":"Gypsy","y":1988,"a":"Fleetwood Mac"},{"id":"6yJxCltgtmGxIgKOS6ndnu","c":"int","d":"1980s","t":"Greatest Love of All","y":1985,"a":"Whitney Houston"},{"id":"300zfRaCgTmEm5Eqe3HqZZ","c":"int","d":"1980s","t":"Ghostbusters","y":1984,"a":"Ray Parker Jr."},{"id":"3K7Q9PHUWPTaknlbFPThn2","c":"int","d":"1980s","t":"Celebration","y":1980,"a":"Kool & The Gang"},{"id":"0L0T4tMAaGqLgIVj1MOj9t","c":"int","d":"1980s","t":"Father Figure","y":1987,"a":"George Michael"},{"id":"1pTGc8pwyo6xtgXBKCBcFn","c":"int","d":"1980s","t":"Woman in Love","y":1980,"a":"Barbra Streisand"},{"id":"7ijKen7rccf56qOMGkS22e","c":"int","d":"1980s","t":"This Woman's Work","y":1989,"a":"Kate Bush"},{"id":"1Hv1VTm8zeOeybub15mA2R","c":"int","d":"1980s","t":"Smooth Operator","y":1984,"a":"Sade"},{"id":"1uvyZBs4IZYRebHIB1747m","c":"int","d":"1980s","t":"Purple Rain","y":1984,"a":"Prince"},{"id":"3spmBjPY8HCNCR6Y0H7Ahd","c":"int","d":"1980s","t":"Upside Down","y":1980,"a":"Diana Ross"},{"id":"2AX5E86cn9n2dgioZEjirI","c":"int","d":"1980s","t":"Golden Brown","y":1981,"a":"The Stranglers"},{"id":"0J2p4KYdr6Mg4ET6JPlbe1","c":"int","d":"1980s","t":"Super Trouper","y":1980,"a":"ABBA"},{"id":"3Z2tPWiNiIpg8UMMoowHIk","c":"int","d":"1980s","t":"We Are The World","y":1985,"a":"U.S.A. For Africa"},{"id":"7jm0IzjrIszyKEYKUXZWbY","c":"int","d":"1980s","t":"Nothing's Gonna Change My Love for You","y":1986,"a":"Glenn Medeiros"},{"id":"3BSi5qoJGLab7rn7zfmTPA","c":"int","d":"1980s","t":"A Groovy Kind of Love","y":1988,"a":"Phil Collins"},{"id":"6Ycf7Ch2VlEKlORbz7yfpJ","c":"int","d":"1980s","t":"Sweet Love","y":1986,"a":"Anita Baker"},{"id":"4LFwNJWoj74Yd71fIr1W8x","c":"int","d":"1980s","t":"Right Here Waiting","y":1989,"a":"Richard Marx"},{"id":"1PtQJZVZIdWIYdARpZRDFO","c":"int","d":"1980s","t":"Running Up That Hill (A Deal With God)","y":1985,"a":"Kate Bush"},{"id":"254bXAqt3zP6P50BdQvEsq","c":"int","d":"1980s","t":"Everywhere","y":1987,"a":"Fleetwood Mac"},{"id":"1lx8ddGT5wCD6W2xmLeRKG","c":"int","d":"1980s","t":"Saving All My Love for You","y":1985,"a":"Whitney Houston"},{"id":"3koCCeSaVUyrRo3N2gHrd8","c":"int","d":"1980s","t":"Let's Groove","y":1981,"a":"Earth","aa":["Wind & Fire"]},{"id":"05wIrZSwuaVWhcv5FfqeH0","c":"int","d":"1980s","t":"Walking On Sunshine","y":1985,"a":"Katrina & The Waves"},{"id":"4w3tQBXhn5345eUXDGBWZG","c":"int","d":"1980s","t":"9 to 5","y":1980,"a":"Dolly Parton"},{"id":"1OzrlK57iLTIjmbZC1ppWM","c":"int","d":"1980s","t":"That's What Friends Are For","y":1985,"a":"Dionne Warwick","aa":["Elton John","Gladys Knight"]},{"id":"1BrbXIJ7b161oQ0PfC0K32","c":"int","d":"1980s","t":"Woman","y":1980,"a":"John Lennon"},{"id":"2nrG5UtAcqXbYttu7MXP1p","c":"int","d":"1980s","t":"Under Pressure","y":1982,"a":"Queen","aa":["David Bowie"]},{"id":"3FdHgoJbH3DXNtGLh56pFu","c":"int","d":"1980s","t":"Conga!","y":1985,"a":"Miami Sound Machine","aa":["Gloria Estefan"]},{"id":"3elV4E1GOKfF0MVRgdp6eU","c":"int","d":"1980s","t":"Brothers In Arms","y":1985,"a":"Dire Straits"},{"id":"4KFM3A5QF2IMcc6nHsu3Wp","c":"int","d":"1980s","t":"Englishman In New York","y":1987,"a":"Sting"},{"id":"5EQzuYfTZt7B2LqlvTF49l","c":"int","d":"1990s","t":"It's All Coming Back to Me Now","y":1996,"a":"Céline Dion"},{"id":"7j5TIXPi0cCbSSqItmbyZy","c":"int","d":"1990s","t":"Vogue","y":1990,"a":"Madonna"},{"id":"7aQjPecQdIuNd1sz3KCDhD","c":"int","d":"1990s","t":"Lovefool","y":1996,"a":"The Cardigans"},{"id":"11mwFrKvLXCbcVGNxffGyP","c":"int","d":"1990s","t":"Genie In a Bottle","y":1999,"a":"Christina Aguilera"},{"id":"67HKtdqchK0rmODxsBeWT8","c":"int","d":"1990s","t":"Can You Feel The Love Tonight","y":1995,"a":"Elton John"},{"id":"6qspW4YKycviDFjHBOaqUY","c":"int","d":"1990s","t":"Waterfalls","y":1994,"a":"TLC"},{"id":"3MjUtNVVq3C8Fn0MP3zhXa","c":"int","d":"1990s","t":"...Baby One More Time","y":1998,"a":"Britney Spears"},{"id":"4oKhxhw0bn3yzXosYHBFTF","c":"int","d":"1990s","t":"Angel","y":1997,"a":"Sarah McLachlan"},{"id":"5vKkaZHPzuqQheytfKuXzp","c":"int","d":"1990s","t":"Circle of Life","y":1994,"a":"Elton John"},{"id":"7woW97CfcWaKtuC6W5BP2K","c":"int","d":"1990s","t":"Heal the World","y":1991,"a":"Michael Jackson"},{"id":"4wtR6HB3XekEengMX17cpc","c":"int","d":"1990s","t":"Children","y":1996,"a":"Robert Miles"},{"id":"33LC84JgLvK2KuW43MfaNq","c":"int","d":"1990s","t":"My Heart Will Go On","y":1997,"a":"Céline Dion"},{"id":"3pRaLNL3b8x5uBOcsgvdqM","c":"int","d":"1990s","t":"Hallelujah","y":1994,"a":"Jeff Buckley"},{"id":"3AoeaZs8dFemFJr3JdzOL0","c":"int","d":"1990s","t":"You Are Not Alone","y":1995,"a":"Michael Jackson"},{"id":"67Hna13dNDkZvBpTXRIaOJ","c":"int","d":"1990s","t":"Teardrop","y":1998,"a":"Massive Attack","aa":["Elizabeth Fraser"]},{"id":"5mgCMlxQW7fmHbrdJuowbB","c":"int","d":"1990s","t":"Hero","y":1993,"a":"Mariah Carey"},{"id":"1LzNfuep1bnAUR9skqdHCK","c":"int","d":"1990s","t":"Fade Into You","y":1993,"a":"Mazzy Star"},{"id":"42nSaPdT6g3ZIMHmKLlP2p","c":"int","d":"1990s","t":"Let's Get Loud","y":1999,"a":"Jennifer Lopez"},{"id":"2II03llydk4YnkBBvoYB3B","c":"int","d":"1990s","t":"Frozen","y":1998,"a":"Madonna"},{"id":"5qGwqO0lkbBXw4xNfzT7SF","c":"int","d":"1990s","t":"Spice Up Your Life","y":1997,"a":"Spice Girls"},{"id":"5ZrDlcxIDZyjOzHdYW1ydr","c":"int","d":"1990s","t":"Barbie Girl","y":1997,"a":"Aqua"},{"id":"4c6vZqYHFur11FbWATIJ9P","c":"int","d":"1990s","t":"There She Goes","y":1990,"a":"The La's"},{"id":"1PEqh7awkpuepLBSq8ZwqD","c":"int","d":"1990s","t":"I Love You Always Forever","y":1996,"a":"Donna Lewis"},{"id":"7IljDTNkQEyy77CcaRbiAj","c":"int","d":"1990s","t":"Endless Love","y":1994,"a":"Luther Vandross","aa":["Mariah Carey"]},{"id":"754kgU5rWscRTfvlsuEwFp","c":"int","d":"1990s","t":"Kiss Me","y":1997,"a":"Sixpence None The Richer"},{"id":"29rQJydAlO0uMyWvRIZxQg","c":"int","d":"1990s","t":"That's The Way Love Goes","y":1993,"a":"Janet Jackson"},{"id":"7vo0ILIm1He4wo30ikYBHh","c":"int","d":"1990s","t":"Set Adrift On Memory Bliss","y":1991,"a":"P.M. Dawn"},{"id":"5Ihd9HrPvOADyVoonH9ZjB","c":"int","d":"1990s","t":"Un-Break My Heart","y":1996,"a":"Toni Braxton"},{"id":"5kj1AhJxSUums4ddBEaMhT","c":"int","d":"1990s","t":"Here With Me","y":1999,"a":"Dido"},{"id":"5YTMRAT4yKgFrepF8Hi3mY","c":"int","d":"1990s","t":"I Want You Back","y":1997,"a":"*NSYNC"},{"id":"0Ph6L4l8dYUuXFmb71Ajnd","c":"int","d":"1990s","t":"Livin' la Vida Loca","y":1999,"a":"Ricky Martin"},{"id":"6jGnykaS6TkWp15utXSAeI","c":"int","d":"2000s","t":"Come Away With Me","y":2002,"a":"Norah Jones"},{"id":"66ZcOcouenzZEnzTJvoFmH","c":"int","d":"2000s","t":"The Sweet Escape","y":2006,"a":"Gwen Stefani","aa":["Akon"]},{"id":"0PSZ9G584Ve27GK6ThlY6P","c":"int","d":"2000s","t":"Lady Marmalade","y":2001,"a":"Christina Aguilera","aa":["Lil' Kim","Mýa"]},{"id":"6wOYnPq1hPihRepcDClPUw","c":"int","d":"2000s","t":"Meet Me Halfway","y":2009,"a":"Black Eyed Peas"},{"id":"5QhBKPqsnX1uY9fZNaAtZg","c":"int","d":"2000s","t":"Stronger","y":2000,"a":"Britney Spears"},{"id":"0ARK753YaiJbpLUk7z5yIM","c":"int","d":"2000s","t":"Dilemma","y":2002,"a":"Nelly","aa":["Kelly Rowland"]},{"id":"4VywXu6umkIQ2OS0m1I79y","c":"int","d":"2000s","t":"Better Together","y":2005,"a":"Jack Johnson"},{"id":"3BLQrC76YB29r1Z5hNJbti","c":"int","d":"2000s","t":"4 Minutes","y":2008,"a":"Madonna","aa":["Justin Timberlake","Timbaland"]},{"id":"7H3ojI1BsVy0dEJENqMt1k","c":"int","d":"2000s","t":"By Your Side","y":2000,"a":"Sade"},{"id":"1zNXF2svmdlNxfS5XeNUgr","c":"int","d":"2000s","t":"Don't Know Why","y":2002,"a":"Norah Jones"},{"id":"2nGFzvICaeEWjIrBrL2RAx","c":"int","d":"2000s","t":"Put Your Records On","y":2006,"a":"Corinne Bailey Rae"},{"id":"0dRhSF9LV0HR8Jwd3MMMKJ","c":"int","d":"2000s","t":"Everytime","y":2003,"a":"Britney Spears"},{"id":"273QnyCvJB65rScHJ1nPZb","c":"int","d":"2000s","t":"Make You Feel My Love","y":2008,"a":"Adele"},{"id":"0CSTvWUps1YmpQoXXay9ol","c":"int","d":"2000s","t":"Cosmic Love","y":2009,"a":"Florence + The Machine"},{"id":"23EhTCPRTlLVM6VQUyh8bH","c":"int","d":"2000s","t":"Don't Tell Me","y":2000,"a":"Madonna"},{"id":"3TCauNPqFiniaYHBvEVoHG","c":"int","d":"2000s","t":"Beautiful","y":2002,"a":"Christina Aguilera"},{"id":"7LVHVU3tWfcxj5aiPFEW4Q","c":"int","d":"2000s","t":"Fix You","y":2005,"a":"Coldplay"},{"id":"0W5zybHvTGLSkpTATdqgb7","c":"int","d":"2000s","t":"Home","y":2004,"a":"Michael Bublé"},{"id":"2usrT8QIbIk9y0NEtQwS4j","c":"int","d":"2000s","t":"Intro","y":2009,"a":"The xx"},{"id":"1vrd6UOGamcKNGnSHJQlSt","c":"int","d":"2000s","t":"Love Story","y":2008,"a":"Taylor Swift"},{"id":"4RCWB3V8V0dignt99LZ8vH","c":"int","d":"2000s","t":"Hey There Delilah","y":2005,"a":"Plain White T's"},{"id":"4JehYebiI9JE8sR8MisGVb","c":"int","d":"2000s","t":"Halo","y":2008,"a":"Beyoncé"},{"id":"7snmvZMLdGGk3l9PcvoYSM","c":"int","d":"2000s","t":"Dance With My Father","y":2003,"a":"Luther Vandross"},{"id":"5YqpHuXpFjDVZ7tY1ClFll","c":"int","d":"2000s","t":"Heartbeats","y":2006,"a":"José González"},{"id":"0IktbUcnAGrvD03AWnz3Q8","c":"int","d":"2000s","t":"Lucky","y":2008,"a":"Jason Mraz","aa":["Colbie Caillat"]},{"id":"4UzVcXufOhGUwF56HT7b8M","c":"int","d":"2000s","t":"My Immortal","y":2003,"a":"Evanescence"},{"id":"2lL1cy6yQ9hBMxZgkaY173","c":"int","d":"2000s","t":"Nine Million Bicycles","y":2005,"a":"Katie Melua"},{"id":"3DamFFqW32WihKkTVlwTYQ","c":"int","d":"2000s","t":"Fireflies","y":2009,"a":"Owl City"},{"id":"2lnzGkdtDj5mtlcOW2yRtG","c":"int","d":"2000s","t":"Whenever, Wherever","y":2001,"a":"Shakira"},{"id":"7Hqig8kp32q2Ire3ECQvWM","c":"int","d":"2000s","t":"Paparazzi","y":2008,"a":"Lady Gaga"},{"id":"190jyVPHYjAqEaOGmMzdyk","c":"int","d":"2010s","t":"Beauty And A Beat","y":2012,"a":"Justin Bieber","aa":["Nicki Minaj"]},{"id":"7hDVYcQq6MxkdJGweuCtl9","c":"int","d":"2010s","t":"ocean eyes","y":2017,"a":"Billie Eilish"},{"id":"0RiRZpuVRbi7oqRdSMwhQY","c":"int","d":"2010s","t":"Sunflower","y":2018,"a":"Post Malone","aa":["Swae Lee"]},{"id":"6lanRgr6wXibZr8KgzXxBl","c":"int","d":"2010s","t":"a thousand years","y":2011,"a":"Christina Perri"},{"id":"76hfruVvmfQbw0eYn1nmeC","c":"int","d":"2010s","t":"Cake By The Ocean","y":2015,"a":"DNCE"},{"id":"65fpYBrI8o2cfrwf2US4gq","c":"int","d":"2010s","t":"Rewrite The Stars","y":2017,"a":"Zac Efron","aa":["Zendaya"]},{"id":"2nMeu6UenVvwUktBCpLMK9","c":"int","d":"2010s","t":"Young And Beautiful","y":2013,"a":"Lana Del Rey"},{"id":"0FDzzruyVECATHXKHFs9eJ","c":"int","d":"2010s","t":"A Sky Full of Stars","y":2014,"a":"Coldplay"},{"id":"27tNWlhdAryQY04Gb2ZhUI","c":"int","d":"2010s","t":"Roar","y":2013,"a":"Katy Perry"},{"id":"2qxmye6gAegTMjLKEBoR3d","c":"int","d":"2010s","t":"Let Me Down Slowly","y":2018,"a":"Alec Benjamin"},{"id":"6JV2JOEocMgcZxYSZelKcc","c":"int","d":"2010s","t":"CAN'T STOP THE FEELING!","y":2016,"a":"Justin Timberlake"},{"id":"0HZhYMZOcUzZKSFwPOti6m","c":"int","d":"2010s","t":"jar of hearts","y":2011,"a":"Christina Perri"},{"id":"1dGr1c8CrMLDpV6mPbImSI","c":"int","d":"2010s","t":"Lover","y":2019,"a":"Taylor Swift"},{"id":"6v3KW9xbzN5yKLt9YKDYA2","c":"int","d":"2010s","t":"Señorita","y":2019,"a":"Shawn Mendes","aa":["Camila Cabello"]},{"id":"37f4ITSlgPX81ad2EvmVQr","c":"int","d":"2010s","t":"Fight Song","y":2015,"a":"Rachel Platten"},{"id":"059ACLUOyEcdruA2m9f2jd","c":"int","d":"2010s","t":"Unstoppable","y":2016,"a":"Sia"},{"id":"4h0zU3O9R5xzuTmNO7dNDU","c":"int","d":"2010s","t":"Lost Boy","y":2015,"a":"Ruth B."},{"id":"74iZuPGwyL33VlTr6jTnab","c":"int","d":"2010s","t":"Always Remember Us This Way","y":2018,"a":"Lady Gaga"},{"id":"4esOae7i4rqTbAu9o5Pxco","c":"int","d":"2010s","t":"Girl on Fire","y":2012,"a":"Alicia Keys"},{"id":"1rIKgCH4H52lrvDcz50hS8","c":"int","d":"2010s","t":"Lush Life","y":2015,"a":"Zara Larsson"},{"id":"42ydLwx4i5V49RXHOozJZq","c":"int","d":"2010s","t":"Scars To Your Beautiful","y":2016,"a":"Alessia Cara"},{"id":"1x5sYLZiu9r5E43kMlt9f8","c":"int","d":"2010s","t":"Symphony","y":2017,"a":"Clean Bandit","aa":["Zara Larsson"]},{"id":"6Vc5wAMmXdKIAM7WUoEb7N","c":"int","d":"2010s","t":"Say Something","y":2014,"a":"A Great Big World","aa":["Christina Aguilera"]},{"id":"1oAwsWBovWRIp7qLMGPIet","c":"int","d":"2010s","t":"Apocalypse","y":2017,"a":"Cigarettes After Sex"},{"id":"1nInOsHbtotAmEOQhtvnzP","c":"int","d":"2010s","t":"Stronger (What Doesn't Kill You)","y":2011,"a":"Kelly Clarkson"},{"id":"6ocbgoVGwYJhOv1GgI9NsF","c":"int","d":"2010s","t":"7 rings","y":2019,"a":"Ariana Grande"},{"id":"7qEHsqek33rTcFNT9PFqLf","c":"int","d":"2010s","t":"Someone You Loved","y":2018,"a":"Lewis Capaldi"},{"id":"221eHga9f9Ne4f8D7WVgPT","c":"int","d":"2020s","t":"Mystical Magical","y":2025,"a":"Benson Boone"},{"id":"1xOqGUkyxGQRdCvGpvWKmL","c":"int","d":"2020s","t":"Gabriela","y":2025,"a":"KATSEYE"},{"id":"37UCSVSqiPGdR1DijOFyYY","c":"int","d":"2020s","t":"Midnight Sun","y":2025,"a":"Zara Larsson"},{"id":"6393yGahSJ9slVdOwSxOVR","c":"int","d":"2020s","t":"Pink Pony Club","y":2023,"a":"Chappell Roan"},{"id":"0kosUz0jePvjiz4ctmR6wL","c":"int","d":"2020s","t":"Dai Dai","y":2026,"a":"Shakira","aa":["Burna Boy"]},{"id":"3hUxzQpSfdDqwM3ZTFQY0K","c":"int","d":"2020s","t":"august","y":2020,"a":"Taylor Swift"},{"id":"5BZsQlgw21vDOAjoqkNgKb","c":"int","d":"2020s","t":"DAISIES","y":2025,"a":"Justin Bieber"},{"id":"6wf7Yu7cxBSPrRlWeSeK0Q","c":"int","d":"2020s","t":"What Was I Made For?","y":2023,"a":"Billie Eilish"},{"id":"5odlY52u43F5BjByhxg7wg","c":"int","d":"2020s","t":"golden hour","y":2022,"a":"JVKE"},{"id":"5ZLUm9eab8y3tqQ1OhQSHI","c":"int","d":"2020s","t":"Abracadabra","y":2025,"a":"Lady Gaga"},{"id":"55lijDD6OAjLFFUHU9tcDm","c":"int","d":"2020s","t":"WHERE IS MY HUSBAND!","y":2025,"a":"RAYE"},{"id":"1qbmS6ep2hbBRaEZFpn7BX","c":"int","d":"2020s","t":"Man I Need","y":2025,"a":"Olivia Dean"},{"id":"4wJ5Qq0jBN4ajy7ouZIV1c","c":"int","d":"2020s","t":"APT.","y":2024,"a":"ROSÉ","aa":["Bruno Mars"]},{"id":"2L9N0zZnd37dwF0clgxMGI","c":"int","d":"2020s","t":"ceilings","y":2022,"a":"Lizzy McAlpine"},{"id":"05od2qm2MTSKCHxy1GBp5W","c":"int","d":"2020s","t":"12 to 12","y":2025,"a":"sombr"},{"id":"21IYMdzTrzSe191Cy5eMap","c":"int","d":"2020s","t":"Sailor Song","y":2025,"a":"Gigi Perez"},{"id":"04emojnbYkrRmv5qtJcgVP","c":"int","d":"2020s","t":"What I Want","y":2025,"a":"Morgan Wallen","aa":["Tate McRae"]},{"id":"42UBPzRMh5yyz0EDPr6fr1","c":"int","d":"2020s","t":"Manchild","y":2025,"a":"Sabrina Carpenter"},{"id":"5YqEzk3C5c3UZ1D5fJUlXA","c":"int","d":"2020s","t":"Sunroof","y":2023,"a":"Nicky Youre","aa":["hey daisy"]},{"id":"0FTmksd2dxiE5e3rWyJXs6","c":"int","d":"2020s","t":"back to friends","y":2024,"a":"sombr"},{"id":"1vYXt7VSjH9JIM5oRRo7vA","c":"int","d":"2020s","t":"Dance The Night","y":2023,"a":"Dua Lipa"},{"id":"3siwsiaEoU4Kuuc9WKMUy5","c":"int","d":"2020s","t":"No One Noticed","y":2024,"a":"The Marías"},{"id":"7ne4VBA60CxGM75vw0EYad","c":"int","d":"2020s","t":"That's So True","y":2024,"a":"Gracie Abrams"},{"id":"31TXxq8gfgYyrYClnYY48m","c":"int","d":"2020s","t":"The Fate of Ophelia","y":2025,"a":"Taylor Swift"},{"id":"50nfwKoDiSYg8zOCREWAm5","c":"int","d":"2020s","t":"Shivers","y":2021,"a":"Ed Sheeran"},{"id":"1kuGVB7EU95pJObxwvfwKS","c":"int","d":"2020s","t":"vampire","y":2023,"a":"Olivia Rodrigo"},{"id":"4WFgvKVfEhb3IUAFGrutTR","c":"int","d":"2020s","t":"Love Me Not","y":2024,"a":"Ravyn Lenae"},{"id":"43iIQbw5hx986dUEZbr3eN","c":"int","d":"2020s","t":"From The Start","y":2023,"a":"Laufey"},{"id":"0cVyQfDyRnMJ0V3rjjdlU3","c":"int","d":"2020s","t":"Lil Boo Thang","y":2023,"a":"Paul Russell"},{"id":"6MpCNFTFywDWncJrfm1ZRS","c":"il","d":"1970s","t":"יותר מזה אנחנו לא צריכים","y":1970,"a":"שלמה ארצי","aa":["Shlomo Artzi"]},{"id":"3gZ4XepIV5eg9FRWdJjf8F","c":"il","d":"1970s","t":"שיר בבוקר בוקר","y":1973,"a":"שלמה ארצי","aa":["Shlomo Artzi"]},{"id":"76OeNhN2XxPLHmIjLwddGy","c":"il","d":"1970s","t":"אליעזר בן יהודה","y":1970,"a":"חוה אלברשטיין","aa":["Chava Alberstein"]},{"id":"11Ec9oR5T6yv572HggoNGf","c":"il","d":"1970s","t":"זה קורה","y":1975,"a":"אריק לביא","aa":["Aric Lavie"]},{"id":"1PBIroFg37g6p0kfO9jlid","c":"il","d":"1970s","t":"שיר הוא לא רק מילים","y":1974,"a":"אריק לביא","aa":["Aric Lavie"]},{"id":"6yaF8z92FOF7nURuHFN9tV","c":"il","d":"1970s","t":"למה לא אמרת לי","y":1974,"a":"אריק לביא","aa":["Aric Lavie"]},{"id":"2gDG9qCRrXXbf5AfjdX5Zh","c":"il","d":"1970s","t":"צליל מכוון","y":1979,"a":"הצליל המכוון","aa":["Tuned Tone"]},{"id":"6tksIhSRsAHtXaXufRAkVN","c":"il","d":"1970s","t":"לוקח את הזמן","y":1979,"a":"הצליל המכוון","aa":["Tuned Tone"]},{"id":"4BlEBYXJnVZg8qnW8oJUR5","c":"il","d":"1970s","t":"ימים לבנים","y":1979,"a":"הצליל המכוון","aa":["Tuned Tone"]},{"id":"71rQ30P1mMo4OLQrIMB6ks","c":"il","d":"1970s","t":"אנ'לא יודע איך לומר לך","y":1976,"a":"תמוז","aa":["Tamuz"]},{"id":"2gGOmvZgrxJPNQBFxsxVCs","c":"il","d":"1970s","t":"הולך בטל","y":1976,"a":"תמוז","aa":["Tamuz"]},{"id":"66SKevN095TOsPzhjalnbP","c":"il","d":"1970s","t":"ככה את רצית אותי","y":1976,"a":"תמוז","aa":["Tamuz"]},{"id":"51pJtNKNl4mD2qkxmVL72C","c":"il","d":"1970s","t":"ערב של יום בהיר","y":1977,"a":"אפרים שמיר","aa":["Efraim Shamir","Astar Shamir","אסתר שמיר"]},{"id":"0f2o6x0CNLCKHAApOhBUbl","c":"il","d":"1970s","t":"עברתי רק כדי לראות","y":1977,"a":"אפרים שמיר","aa":["Efraim Shamir","Astar Shamir","אסתר שמיר"]},{"id":"2UlGLck9UGPBaHDyXhdRo8","c":"il","d":"1970s","t":"יעלה ויבוא","y":1973,"a":"גידי גוב","aa":["Gidi Gov"]},{"id":"5V64fdWLXQJSKLXfB5JB3m","c":"il","d":"1970s","t":"שלוש בעיר בלילה","y":1978,"a":"גידי גוב","aa":["Gidi Gov"]},{"id":"5i2dSydAeEcAN4RyXJTK07","c":"il","d":"1970s","t":"העיקר זה הרומנטיקה","y":1978,"a":"גידי גוב","aa":["Gidi Gov"]},{"id":"6d8ThEmHddJ1tMK16r0kzI","c":"il","d":"1980s","t":"אמצע ספטמבר","y":1986,"a":"גלי עטרי","aa":["Gali Atari"]},{"id":"7DCm3HPwj2RGpxG9TL6FIn","c":"il","d":"1980s","t":"האשה שאיתי","y":1983,"a":"דוד ברוזה","aa":["David Broza"]},{"id":"3TnonNPy8QZzVN2EqSBwop","c":"il","d":"1980s","t":"אם זו אהבה","y":1982,"a":"אבנר קנר","aa":["Avner Kenner","Mazi Cohen","מזי כהן","Yoel Lerner","יואל לרנר"]},{"id":"1BRnxwGJqfzwq1spQFtWH8","c":"il","d":"1980s","t":"ואיך שלא","y":1989,"a":"אריאל זילבר","aa":["Ariel Zilber"]},{"id":"2ti4vnFBNMuIFoQLgEUFIc","c":"il","d":"1980s","t":"לונדון","y":1989,"a":"חוה אלברשטיין","aa":["Chava Alberstein"]},{"id":"18ABz8Ie83HK67HwjPFgUW","c":"il","d":"1980s","t":"הטבעת נפלה","y":1989,"a":"קורין אלאל","aa":["Korin Allal"]},{"id":"4oRsv94ZB8SG52mGfjqI7q","c":"il","d":"1980s","t":"ילד ירוק","y":1983,"a":"אריק סיני","aa":["Arik Sinai"]},{"id":"20zd4t0wECC5TicYKPHUQc","c":"il","d":"1980s","t":"החגיגה נגמרת","y":1982,"a":"הכל עובר חביבי","aa":["Hakol Over Habibi"]},{"id":"1ZXt3ONPURfgho0lbNSv60","c":"il","d":"1980s","t":"האהבה שלי היא לא האהבה שלו","y":1981,"a":"יצחק קלפטר","aa":["Itzhak Klepter"]},{"id":"2hTKD3Nrz4B4LELFMaotBA","c":"il","d":"1980s","t":"חתול, מפלצת","y":1988,"a":"רמי פורטיס","aa":["Rami Fortis","Berry Sakharof","ברי סחרוף","Fortisakharof","פורטיסחרוף"]},{"id":"5gA2AH6TJWRPKna16ewi7C","c":"il","d":"1980s","t":"עוד פגישה","y":1982,"a":"טי-סלאם","aa":["T-Slam"]},{"id":"5H4PUy80GRpqhW1JULE7pm","c":"il","d":"1980s","t":"נפאל","y":1988,"a":"גלי עטרי","aa":["Gali Atari"]},{"id":"7MbPYwLLpBKOJQaXtcqwqS","c":"il","d":"1980s","t":"רמז","y":1989,"a":"חוה אלברשטיין","aa":["Chava Alberstein"]},{"id":"2qN7WDKnpn8Ct9WhXCUaoG","c":"il","d":"1980s","t":"בואו נשיר לארץ יפה","y":1988,"a":"חיים משה","aa":["Haim Moshe"]},{"id":"7FzIseqWcI9XeajHYlE6bQ","c":"il","d":"1980s","t":"חמש בבוקר עוזבת","y":1982,"a":"אבנר קנר","aa":["Avner Kenner","Mazi Cohen","מזי כהן","Yoel Lerner","יואל לרנר"]},{"id":"36ye6LIr2GBnIFR3Qs95uv","c":"il","d":"1980s","t":"ערב אבוד","y":1980,"a":"דודא","aa":["Doda"]},{"id":"3u5tCnRZ2c72ZEj8myQg1T","c":"il","d":"1980s","t":"אלה","y":1986,"a":"דפנה ארמוני","aa":["Dafna Armoni"]},{"id":"7GDczVNdqle26Ff2LrzsLr","c":"il","d":"1980s","t":"עתיד מתוק","y":1985,"a":"משינה","aa":["Mashina"]},{"id":"4ZPDX43sPPCDkOTASgNgnn","c":"il","d":"1980s","t":"שירו של שפשף","y":1985,"a":"מאיר בנאי","aa":["Meir Banai"]},{"id":"15UmT9W65ccmBbdjFRRqmE","c":"il","d":"1980s","t":"דרך הכורכר","y":1980,"a":"אריק סיני","aa":["Arik Sinai"]},{"id":"3qlJNCRVWb3JQ9AYEG1Teu","c":"il","d":"1980s","t":"במטוס סילון","y":1981,"a":"שלמה ארצי","aa":["Shlomo Artzi"]},{"id":"59UZF4zadjnRCDNmPaUo5P","c":"il","d":"1980s","t":"מקום לדאגה","y":1987,"a":"ריקי גל","aa":["Riki Gal","Matti Caspi","מתי כספי"]},{"id":"17TlRRY4LsAA6jqQP0xi0j","c":"il","d":"1980s","t":"מהן המילים","y":1981,"a":"שלמה ארצי","aa":["Shlomo Artzi"]},{"id":"7cEyYLNIadbBMvdxBVlrgV","c":"il","d":"1980s","t":"ריקמה אנושית אחת","y":1988,"a":"חוה אלברשטיין","aa":["Chava Alberstein"]},{"id":"4QS3Dgcd3dtx9wj7HKOOc7","c":"il","d":"1990s","t":"נאחז באוויר","y":1991,"a":"גידי גוב","aa":["Gidi Gov"]},{"id":"3RJ0Rr6gDeeGVXn3QeLFvf","c":"il","d":"1990s","t":"נערה במשקפיים","y":1991,"a":"גידי גוב","aa":["Gidi Gov"]},{"id":"4vHnIzbZSwPewyfu1dqtOd","c":"il","d":"1990s","t":"קח אותי כך","y":1990,"a":"אתי אנקרי","aa":["Etti Ankri"]},{"id":"5XusqEkCzcSAS6NDCNgITz","c":"il","d":"1990s","t":"כל דבר קט","y":1993,"a":"אלון אולארצ'יק","aa":["Alon Oleartchik"]},{"id":"5PCVsQeOgwp4kWcPTcvvND","c":"il","d":"1990s","t":"תגיד לי מה אתה מרגיש","y":1993,"a":"אלון אולארצ'יק","aa":["Alon Oleartchik"]},{"id":"2erMMdTBkGeGuFr9E735Yb","c":"il","d":"1990s","t":"מעביר דף","y":1996,"a":"נורית גלרון","aa":["Nurit Galron"]},{"id":"6MGWN7fUBZ5FUvJkkelGR0","c":"il","d":"1990s","t":"גאון","y":1996,"a":"נורית גלרון","aa":["Nurit Galron"]},{"id":"3m07U0RlTRONkweZbYrosm","c":"il","d":"1990s","t":"מליארד טועים","y":1992,"a":"אביב גפן","aa":["Aviv Geffen"]},{"id":"4Y7gbwymGo4xv1DXO6W6Zt","c":"il","d":"1990s","t":"אמריקה","y":1990,"a":"פורטיסחרוף","aa":["Fortisakharof","Rami Fortis","רמי פורטיס","Berry Sakharof","ברי סחרוף"]},{"id":"69CT9VvhGO1CyaTh943vUc","c":"il","d":"1990s","t":"אין קץ לילדות","y":1990,"a":"פורטיסחרוף","aa":["Fortisakharof","Rami Fortis","רמי פורטיס","Berry Sakharof","ברי סחרוף"]},{"id":"7GcAiNJYFWqg3GNnvzzcwf","c":"il","d":"1990s","t":"ניצוצות","y":1990,"a":"פורטיסחרוף","aa":["Fortisakharof","Rami Fortis","רמי פורטיס","Berry Sakharof","ברי סחרוף"]},{"id":"5lzkJ20hAjIhRHC9oOzcxj","c":"il","d":"1990s","t":"תלוי על הצלב","y":1994,"a":"רמי פורטיס","aa":["Rami Fortis"]},{"id":"4uevAnpFwW82x7JsqVkVeF","c":"il","d":"1990s","t":"את לא","y":1994,"a":"רמי פורטיס","aa":["Rami Fortis"]},{"id":"3f1i7oBHKSMZ3YVMF4NU50","c":"il","d":"1990s","t":"לא יכול לעצור את זה","y":1997,"a":"יובל בנאי","aa":["Yuval Banay"]},{"id":"0pyCkR8p4PCBAvz0ynSqzZ","c":"il","d":"1990s","t":"ניפגש במאי","y":1999,"a":"יובל בנאי","aa":["Yuval Banay"]},{"id":"2b6tqiNy8IBVb2XczeXB9B","c":"il","d":"1990s","t":"שמתי לי פודרה","y":1997,"a":"אביתר בנאי","aa":["Eviatar Banai","Efrat Ben Zur","אפרת בן צור"]},{"id":"7G5DX8U0A1MpNTbaET7uvA","c":"il","d":"1990s","t":"מתי נתנשק","y":1997,"a":"אביתר בנאי","aa":["Eviatar Banai"]},{"id":"1r4D2L2VxgmpyQPDyC4iC1","c":"il","d":"2000s","t":"תחרות כלבים","y":2005,"a":"אביתר בנאי","aa":["Eviatar Banai"]},{"id":"36sOEWkajARXemnhgb0VVk","c":"il","d":"2000s","t":"אבא","y":2009,"a":"אביתר בנאי","aa":["Eviatar Banai"]},{"id":"13cn5UbRyVWi06mdAbOuyT","c":"il","d":"2000s","t":"בלוז כנעני","y":2004,"a":"אהוד בנאי","aa":["Ehud Banai"]},{"id":"3knXGCAaGa7evVYfinGcWF","c":"il","d":"2000s","t":"היום","y":2004,"a":"אהוד בנאי","aa":["Ehud Banai"]},{"id":"3lkGYeb5Hv4vXLPWH0GsOq","c":"il","d":"2000s","t":"ענה לי","y":2004,"a":"אהוד בנאי","aa":["Ehud Banai"]},{"id":"7GqvT3NBRzNsQpFwp5rOAR","c":"il","d":"2000s","t":"לב סדוק","y":2001,"a":"מאיר בנאי","aa":["Meir Banai"]},{"id":"0smAZmlisWk0WQYOoh3TVj","c":"il","d":"2000s","t":"בשם האהבה","y":2002,"a":"מאיר בנאי","aa":["Meir Banai"]},{"id":"1Xh8Ndf29yTyE3XhrNP8y1","c":"il","d":"2000s","t":"לך אלי","y":2007,"a":"מאיר בנאי","aa":["Meir Banai"]},{"id":"7C6aBVq54SEWDY76bZGvJ0","c":"il","d":"2000s","t":"פרפרים","y":2000,"a":"אורי בנאי","aa":["Uri Banai"]},{"id":"1lWzdPzdcGa5Gu5sMjswHe","c":"il","d":"2000s","t":"נוף ילדות","y":2000,"a":"שלמה ארצי","aa":["Shlomo Artzi"]},{"id":"137XPf17euz6yx7DUrp1lo","c":"il","d":"2000s","t":"שיר פרידה","y":2000,"a":"שלמה ארצי","aa":["Shlomo Artzi","Ben Artzi","בן ארצי"]},{"id":"0rWEVHFHGhzn56LJNhGzam","c":"il","d":"2000s","t":"מיליון או דולר","y":2001,"a":"אייל גולן","aa":["Eyal Golan"]},{"id":"5NJA3FtBrtcEwkQIN3uxpt","c":"il","d":"2000s","t":"צליל מיתר","y":2001,"a":"אייל גולן","aa":["Eyal Golan"]},{"id":"4qJ1hiG1m434ndm8A7PW1f","c":"il","d":"2000s","t":"מלך אמיתי","y":2000,"a":"זהבה בן","aa":["Zehava Ben"]},{"id":"6KqI5TK513aYWVZ9hpdQfZ","c":"il","d":"2000s","t":"אני שטה","y":2000,"a":"זהבה בן","aa":["Zehava Ben"]},{"id":"7yWVJMFtJ5f8jEyWsKJ6Gf","c":"il","d":"2000s","t":"להשתגע","y":2000,"a":"זהבה בן","aa":["Zehava Ben"]},{"id":"5BnZHxXDZ87148wAIo6pgC","c":"il","d":"2000s","t":"אם תלך","y":2002,"a":"עידן רייכל","aa":["Idan Raichel"]},{"id":"1zf3h6fvmNJyUE3sG6LbWs","c":"il","d":"2000s","t":"הנך יפה","y":2002,"a":"עידן רייכל","aa":["Idan Raichel"]},{"id":"4HTmUGyRL1lJqQ9Cu52bH0","c":"il","d":"2000s","t":"מדברים בשקט","y":2002,"a":"עידן רייכל","aa":["Idan Raichel"]},{"id":"43p28wQBFKN8DS5925Matp","c":"il","d":"2000s","t":"נובמבר","y":2005,"a":"מירי מסיקה","aa":["Miri Mesika"]},{"id":"6QPKYGnAW9QozVz2dSWqRg","c":"int","d":"2010s","t":"Someone Like You","y":2011,"a":"Adele"},{"id":"3dYD57lRAUcMHufyqn9GcI","c":"int","d":"2010s","t":"Take Me To Church","y":2013,"a":"Hozier"},{"id":"7DFNE7NO0raLIUbgzY2rzm","c":"int","d":"2010s","t":"Let Her Go","y":2012,"a":"Passenger"},{"id":"1eq1wUnLVLg4pdEfx9kajC","c":"int","d":"2010s","t":"Rolling in the Deep","y":2010,"a":"Adele"},{"id":"2VxeLyX666F8uXCJ0dZF8B","c":"int","d":"2010s","t":"Shallow","y":2018,"a":"Lady Gaga","aa":["Bradley Cooper"]},{"id":"6O20JhBJPePEkBdrB5sqRx","c":"int","d":"2010s","t":"Diamonds","y":2012,"a":"Rihanna"},{"id":"1bhUWB0zJMIKr9yVPrkEuI","c":"int","d":"2010s","t":"Perfect Duet","y":2017,"a":"Ed Sheeran","aa":["Beyoncé"]},{"id":"6nek1Nin9q48AVZcWs9e9D","c":"int","d":"2010s","t":"Paradise","y":2011,"a":"Coldplay"},{"id":"4rHZZAmHpZrA3iH5zx8frV","c":"int","d":"2010s","t":"Mirrors","y":2013,"a":"Justin Timberlake"},{"id":"62yJjFtgkhUrXktIoSjgP2","c":"int","d":"2010s","t":"Radioactive","y":2012,"a":"Imagine Dragons"},{"id":"6FRLCMO5TUHTexlWo8ym1W","c":"int","d":"2010s","t":"Girls Like You","y":2018,"a":"Maroon 5","aa":["Cardi B"]},{"id":"5yVIlYEHZxQVLyInCdldoS","c":"int","d":"2010s","t":"Impossible","y":2013,"a":"James Arthur"},{"id":"3p5NEImV6ChytYLOD3FMkQ","c":"il","d":"2020s","t":"נתתי לך בית","y":2026,"a":"אופק אדנק","aa":["Ofek Adanek"]},{"id":"0rVTBbyS7Etl0lI3bpwo0h","c":"il","d":"2020s","t":"אבי הטחול","y":2026,"a":"רואי אדם","aa":[]},{"id":"2CGlVhHnz1LDbZs2u9ezcE","c":"il","d":"2020s","t":"כבר לא שמח","y":2026,"a":"נדב חנציס","aa":["Ofek Adanek","אופק אדנק"]},{"id":"0foeq1vMqkfKZ8hIeQHhca","c":"il","d":"2020s","t":"יוצאת מן הכלל","y":2026,"a":"ליעד מאיר","aa":["LIAD MEIR","Ofek Adanek","אופק אדנק"]},{"id":"0YYA86n3btGsJW17IFuJAi","c":"il","d":"2020s","t":"קילומטר קדימה","y":2026,"a":"רואי אדם","aa":[]},{"id":"619O7TrgVYZof5hF3xLc4b","c":"il","d":"2020s","t":"מחול","y":2026,"a":"עדן בן זקן","aa":["Eden Ben Zaken","ששון איפרם שאולוב"]},{"id":"7rsFhMtLmAIc9ylVXaspcY","c":"il","d":"2020s","t":"איך שהיא רוקדת","y":2026,"a":"עדן חסון","aa":["Eden Hason","Ofek Adanek","אופק אדנק","Agam Buhbut","אגם בוחבוט"]},{"id":"5hPTcSI1Hq8pSZxTXShzp6","c":"il","d":"2020s","t":"מונולוג","y":2026,"a":"סטילה","aa":["STILLA","Ness","נס"]},{"id":"0cxApO2rc8mZL4WbTPx0ja","c":"il","d":"2020s","t":"שחור לבן","y":2026,"a":"יאנג בוטה","aa":["young buta"]},{"id":"6VYbnnpUYShqFn22MERtmP","c":"il","d":"2020s","t":"המבט בעיניך","y":2025,"a":"אגם בוחבוט","aa":["Agam Buhbut"]},{"id":"0A1D1YYzOJjpqUTImCkIgA","c":"il","d":"2020s","t":"אהבת חיי","y":2026,"a":"רואי אדם","aa":[]},{"id":"0XN0qo1SvJeiiV6yoPP85V","c":"il","d":"2020s","t":"לופ שלא נגמר","y":2026,"a":"עדן בן זקן","aa":["Eden Ben Zaken"]},{"id":"7qzKiAkASRzrb9EXZ0HXcN","c":"il","d":"2020s","t":"קח אותי לתאילנד","y":2026,"a":"אבי אבורומי","aa":["Avi Aburomi"]},{"id":"5Ix2aNOllVyb7gsyu8aQag","c":"il","d":"2020s","t":"לא קונה אותי","y":2026,"a":"מור","aa":["Mor"]},{"id":"7MIg6zwmb0jYX7B7Z3kl9c","c":"il","d":"2020s","t":"עשר רמות מעליו","y":2026,"a":"אודיה","aa":["Odeya"]},{"id":"0rNhXjwIf1748jqeHo3n6z","c":"il","d":"2020s","t":"אהבת השם","y":2026,"a":"בן צור","aa":["Ben Zur"]},{"id":"7iepAdmAykL8gh7dYMzpsM","c":"il","d":"2020s","t":"רולקס וקסקט","y":2026,"a":"עדן בן זקן","aa":["Eden Ben Zaken"]},{"id":"0iBMxZn5ENxNozVqUYbDZt","c":"il","d":"2020s","t":"אל תשחקי לי בלב","y":2026,"a":"נדב חנציס","aa":[]},{"id":"3E8a4zr8OUM4MIU7t9SGI7","c":"il","d":"2020s","t":"נווה הדרים","y":2026,"a":"ששון איפרם שאולוב","aa":[]},{"id":"21lNFbYE1iSBYtNcW2U8Vm","c":"il","d":"2020s","t":"איש הפלא","y":2025,"a":"בן צור","aa":["Ben Zur"]},{"id":"4LcvV8xxA3oYpvOoaZa59o","c":"il","d":"2020s","t":"סטארבקס","y":2026,"a":"עדן גולן","aa":["Eden Golan","ShrekDiMC"]},{"id":"4R4gWf1OwHfei2ldfybUqn","c":"il","d":"2020s","t":"בודד בעיר הגדולה","y":2026,"a":"אייל גולן","aa":["Eyal Golan"]},{"id":"0qYTdtFha4PIKFgDMprRlk","c":"il","d":"2020s","t":"7 לילות","y":2026,"a":"ליאם גולן","aa":[]},{"id":"5cexYtv51CMqLuUwC9J5dH","c":"il","d":"2020s","t":"אין מילים איתך","y":2026,"a":"פול טראנק","aa":["Full Trunk"]},{"id":"6JPlSTk7mpboMx3VRxiFTC","c":"il","d":"2020s","t":"אהבה ראשונה","y":2026,"a":"נדב חנציס","aa":[]},{"id":"3IGeTg6zodZUVUNHp7bfmk","c":"il","d":"2020s","t":"סוד הנעורים","y":2026,"a":"יאנג בוטה","aa":["young buta"]},{"id":"0SDMqZRfsGAr8SgvWPysxA","c":"il","d":"2020s","t":"מסיבת ציפורים","y":2026,"a":"בן צור","aa":["Ben Zur","Vini Vici"]},{"id":"5yBEMBo9K2w1DJBYxna1aj","c":"il","d":"2010s","t":"מחוזקים לעולם","y":2010,"a":"אברהם טל","aa":["Avraham Tal"]},{"id":"4UfXeZcYAoe8Z8XDVBCkug","c":"il","d":"2010s","t":"עכשיו תורי","y":2010,"a":"רוני דלומי","aa":["Roni Dalumi"]},{"id":"0k5eHSjXSMKbdPw9WhbscR","c":"il","d":"2010s","t":"אשמור עלייך","y":2010,"a":"משה פרץ","aa":["Moshe Perez"]},{"id":"3i7hZUtOpGMTF0fOhBwmcy","c":"il","d":"2010s","t":"מכתב לאחי","y":2010,"a":"אלאי בוטנר","aa":["Elai Botner","Kobi Aflalo","קובי אפללו"]},{"id":"3rKq9QQzb28Klhwh1LK9nn","c":"il","d":"2010s","t":"אור גדול","y":2010,"a":"אמיר דדון","aa":["Amir Dadon"]},{"id":"0LLUCA7kUAgbxIASev4oWX","c":"il","d":"2010s","t":"האחת שלי","y":2011,"a":"ישי לוי","aa":["Ishay Levi"]},{"id":"4a79nfLv9E7yUT43oHtDs9","c":"il","d":"2010s","t":"תגידו לה","y":2010,"a":"דודו אהרון","aa":["Dudu Aharon"]},{"id":"7LBieaBbNdbkcGBnTnltgM","c":"il","d":"2010s","t":"שתדעי","y":2010,"a":"שלומי שבת","aa":["Shlomi Shabat"]},{"id":"1FmUxy2igihTMGw3G7XM1E","c":"il","d":"2010s","t":"תן","y":2010,"a":"רוני דלומי","aa":["Roni Dalumi"]},{"id":"1Wq3yyNg0arlNd8fEruYF1","c":"il","d":"2010s","t":"אורות","y":2010,"a":"אברהם טל","aa":["Avraham Tal"]},{"id":"5Iu5Arli8isXulPfAQjbYI","c":"il","d":"2010s","t":"נמס ממך","y":2011,"a":"עומר אדם","aa":["Omer Adam"]},{"id":"2Z9Ioyo3QCKc6KoWDDw910","c":"il","d":"2010s","t":"אם את הולכת","y":2010,"a":"אברהם טל","aa":["Avraham Tal"]},{"id":"2kFigDb0zeSkZlXzxDRNp0","c":"il","d":"2010s","t":"תם ולא נשלם","y":2013,"a":"אלאי בוטנר וילדי החוץ","aa":["Elai Botner and Yaldei Hachutz","Elai Botner","אלאי בוטנר"]},{"id":"3dO9jx536y47Bucx9BL3jL","c":"il","d":"2010s","t":"אל תאמר","y":2014,"a":"יובל דיין","aa":["Yuval Dayan"]},{"id":"4TqsT1fP1aGygdtxRfyvzt","c":"il","d":"2010s","t":"את","y":2012,"a":"ישי לוי","aa":["Ishay Levi"]},{"id":"1oBLVL96Oz8JAi8ub7LzAJ","c":"il","d":"2010s","t":"הגורל הזה","y":2015,"a":"דודו אהרון","aa":["Dudu Aharon"]},{"id":"0B5V2Bwq940RBd4u5W1oTo","c":"il","d":"2010s","t":"האהבה הזאת שלנו","y":2015,"a":"עברי לידר","aa":["Ivri Lider"]},{"id":"7n6emXIcaECmkljP1rPlvQ","c":"il","d":"2010s","t":"לבחור נכון","y":2018,"a":"אמיר דדון","aa":["Amir Dadon"]},{"id":"3hay408PSjTAxPn5TPxzyh","c":"il","d":"2010s","t":"חלק מהזמן","y":2018,"a":"עידן עמדי","aa":["Idan Amedi"]},{"id":"0lhjUB7medv0bEiWHEMDy1","c":"il","d":"2010s","t":"עד שתחזור","y":2014,"a":"יובל דיין","aa":["Yuval Dayan"]}];
+
+/* ---------- text ---------- */
+const T = {
+  en:{appSub:"Name that intro",setupTitle:"Set up your game",decades:"Decades",music:"Music",answerStyle:"How you answer",yearScoring:"Year scoring",rounds:"Rounds",
+    intl:"International",il:"Israeli",type:"Type it",choice:"Multiple choice",exact:"Exact year only",partial:"Partial credit (±2 years)",all:"All",
+    loginNote:"Log in to Spotify in this browser (open.spotify.com) so songs play in full from the very first second. Without a login, Spotify plays a 30-second preview that may start mid-song.",
+    askLabel:"Question per song",playOn:"Play songs on",onApp:"My Spotify app",onPage:"This page (computer)",
+    cidLabel:"Spotify Client ID",redirLabel:"Redirect URI (paste this into your Spotify app settings)",copy:"Copy",copied:"Copied",connect:"Connect Spotify",disconnect:"Disconnect",
+    connected:"Connected to Spotify. Keep the Spotify app open on the device you want to hear the songs on.",notConnected:"Not connected yet. Paste your Client ID, then press Connect Spotify.",
+    needHost:"Connecting to Spotify only works from the game's web address (https://…), not from a downloaded file.",
+    connFail:"Spotify didn't accept the connection. Check that the Client ID is right and the Redirect URI above is saved in your Spotify app settings.",
+    noDevice:"Spotify isn't open on any of your devices. Open the Spotify app, play any song for a second, then press Play again.",
+    needPremium:"Spotify refused to play. Remote control needs Spotify Premium.",
+    notAllowed:"Spotify says this account isn't allowed to use your app yet. In the Spotify developer dashboard, open your app → User Management, and add your Spotify email.",
+    reconnect:"Your Spotify connection expired. Go back to settings and press Connect Spotify.",
+    needConnect:"Connect Spotify first (below), or switch to This page.",
+    appHint:"The song plays in your Spotify app. Its title shows there, so keep that screen out of sight.",
+    fullSong:"Play the song",askRandom:"Random",askAll:"All three",skip:"Skip song",
+    qSong:"What's the song called?",qArtist:"Who's the artist?",qYear:"What year did it come out?",qAll:"Your guess",theSong:"The song",
+    start:"Start game",round:"Round",score:"Score",streak:"Streak",play:"Play",sec:"sec",giveUp:"Reveal",hidden:"Hidden until you answer",yourGuess:"Your guess",
+    song:"Song",artist:"Artist",year:"Year",submit:"Submit answer",roundPts:"This round",next:"Next song",finish:"See results",gameOver:"Game over",again:"Play again",changeSettings:"Change settings",
+    pool:(n)=>`${n} songs match these settings.`,poolNone:"No songs match. Pick at least one decade and one music type.",
+    clip:(s)=>`${s} seconds unlocked`,songN:(i,n)=>`Song ${i} of ${n}`,songNA:(i)=>`Song ${i}`,
+    correct:"Spot on",close:"Close",wrong:"Not this time",skipped:"Revealed",
+    yours:"You said",nothing:"(no answer)",
+    resGreat:"Great ear!",resGood:"Nice one",resMeh:"Tough one",resZero:"Better luck on the next one",
+    preview:"Spotify is playing 30-second previews, so clips may not start at the beginning. Log in at open.spotify.com in this browser and reload this page.",
+    loading:"Connecting to Spotify…",playerFail:"Spotify's player didn't load. Check your internet connection and reload the page.",
+    stuck:"Spotify didn't start playing. Make sure you're logged in at open.spotify.com in this browser, then press Play again.",
+    finalNote:(n,max)=>`${n} songs played · best possible ${max}`,mcNote:"Multiple-choice points are worth 60% of typed answers.",
+    phSong:"Song title",phArtist:"Artist",phYear:"e.g. 1985"},
+  he:{appSub:"נחשו את הפתיח",setupTitle:"הגדרות משחק",decades:"עשורים",music:"מוזיקה",answerStyle:"איך עונים",yearScoring:"ניקוד שנה",rounds:"סבבים",
+    intl:"לועזי",il:"ישראלי",type:"הקלדה",choice:"אמריקאית",exact:"שנה מדויקת בלבד",partial:"ניקוד חלקי (±2 שנים)",all:"הכל",
+    loginNote:"התחברו לספוטיפיי בדפדפן הזה (open.spotify.com) כדי שהשירים יתנגנו במלואם מהשנייה הראשונה. בלי התחברות ספוטיפיי משמיע תצוגה מקדימה של 30 שניות שעלולה להתחיל באמצע השיר.",
+    askLabel:"שאלה לכל שיר",playOn:"איפה לנגן",onApp:"אפליקציית ספוטיפיי שלי",onPage:"בדף הזה (מחשב)",
+    cidLabel:"Client ID של ספוטיפיי",redirLabel:"Redirect URI (להדביק בהגדרות האפליקציה בספוטיפיי)",copy:"העתק",copied:"הועתק",connect:"התחבר לספוטיפיי",disconnect:"התנתק",
+    connected:"מחובר לספוטיפיי. השאירו את אפליקציית ספוטיפיי פתוחה במכשיר שבו תרצו לשמוע.",notConnected:"עדיין לא מחובר. הדביקו את ה-Client ID ולחצו התחבר לספוטיפיי.",
+    needHost:"ההתחברות לספוטיפיי עובדת רק מכתובת האתר של המשחק (https://…), לא מקובץ שהורד.",
+    connFail:"ספוטיפיי לא אישר את החיבור. בדקו שה-Client ID נכון ושה-Redirect URI שלמעלה שמור בהגדרות האפליקציה בספוטיפיי.",
+    noDevice:"ספוטיפיי לא פתוח באף מכשיר. פתחו את האפליקציה, נגנו שיר כלשהו לשנייה ולחצו שוב על נגן.",
+    needPremium:"ספוטיפיי סירב לנגן. שליטה מרחוק דורשת ספוטיפיי פרימיום.",
+    notAllowed:"ספוטיפיי אומר שהחשבון עוד לא מורשה להשתמש באפליקציה. בלוח המפתחים של ספוטיפיי פתחו את האפליקציה ← User Management והוסיפו את האימייל שלכם.",
+    reconnect:"החיבור לספוטיפיי פג. חזרו להגדרות ולחצו התחבר לספוטיפיי.",
+    needConnect:"קודם התחברו לספוטיפיי (למטה), או בחרו בדף הזה.",
+    appHint:"השיר מתנגן באפליקציית ספוטיפיי ושם השיר מופיע שם, אז אל תסתכלו עליה.",
+    fullSong:"נגן את השיר",askRandom:"אקראי",askAll:"שלושתן",skip:"דלג על השיר",
+    qSong:"איך קוראים לשיר?",qArtist:"מי המבצע?",qYear:"באיזו שנה הוא יצא?",qAll:"הניחוש שלכם",theSong:"השיר",
+    start:"התחל משחק",round:"סבב",score:"ניקוד",streak:"רצף",play:"נגן",sec:"שנ׳",giveUp:"גלה",hidden:"מוסתר עד שתענו",yourGuess:"הניחוש שלכם",
+    song:"שם השיר",artist:"מבצע",year:"שנה",submit:"שלח תשובה",roundPts:"בסבב הזה",next:"לשיר הבא",finish:"לתוצאות",gameOver:"המשחק נגמר",again:"שחק שוב",changeSettings:"שנה הגדרות",
+    pool:(n)=>`${n} שירים מתאימים להגדרות.`,poolNone:"אין שירים מתאימים. בחרו לפחות עשור אחד וסוג מוזיקה אחד.",
+    clip:(s)=>`${s} שניות פתוחות`,songN:(i,n)=>`שיר ${i} מתוך ${n}`,songNA:(i)=>`שיר ${i}`,
+    correct:"בול",close:"קרוב",wrong:"לא הפעם",skipped:"נחשף",
+    yours:"עניתם",nothing:"(אין תשובה)",
+    resGreat:"אוזן מוזיקלית!",resGood:"יפה מאוד",resMeh:"זה היה קשה",resZero:"בהצלחה בשיר הבא",
+    preview:"ספוטיפיי משמיע תצוגות מקדימות של 30 שניות, ולכן הקטעים עלולים לא להתחיל מההתחלה. התחברו ב-open.spotify.com בדפדפן הזה וטענו את הדף מחדש.",
+    loading:"מתחבר לספוטיפיי…",playerFail:"הנגן של ספוטיפיי לא נטען. בדקו את החיבור לאינטרנט וטענו את הדף מחדש.",
+    stuck:"ספוטיפיי לא התחיל לנגן. ודאו שאתם מחוברים ב-open.spotify.com בדפדפן הזה ולחצו שוב על נגן.",
+    finalNote:(n,max)=>`${n} שירים · מקסימום אפשרי ${max}`,mcNote:"בתשובות אמריקאיות הניקוד הוא 60% מניקוד הקלדה.",
+    phSong:"שם השיר",phArtist:"מבצע",phYear:"למשל 1985"}
+};
+const DECADES=["1970s","1980s","1990s","2000s","2010s","2020s"];
+const MAX_BITES=10, BITE=3;
+const PTS={song:50,artist:30,year:20};
+
+/* ---------- state ---------- */
+const S={lang:"en",decades:new Set(DECADES),cats:new Set(["int","il"]),ask:"random",player:"app",mode:"type",yearMode:"exact",rounds:10,
+  queue:[],idx:0,score:0,streak:0,bites:1,history:[],pick:{song:null,artist:null,year:null},done:false};
+try{const saved=JSON.parse(localStorage.getItem("threeSecondsSettings")||"null"); if(saved){S.lang=saved.lang||S.lang;S.decades=new Set(saved.decades||DECADES);S.cats=new Set(saved.cats||["int","il"]);S.mode=saved.mode||S.mode;S.yearMode=saved.yearMode||S.yearMode;S.rounds=saved.rounds??S.rounds;S.ask=saved.ask||S.ask;S.player=saved.player||S.player;}}catch(e){}
+function saveSettings(){try{localStorage.setItem("threeSecondsSettings",JSON.stringify({lang:S.lang,decades:[...S.decades],cats:[...S.cats],mode:S.mode,yearMode:S.yearMode,rounds:S.rounds,ask:S.ask,player:S.player}))}catch(e){}}
+const $=id=>document.getElementById(id);
+const t=k=>T[S.lang][k];
+
+/* ---------- text matching ---------- */
+const FINALS={"ך":"כ","ם":"מ","ן":"נ","ף":"פ","ץ":"צ"};
+const STOP=new Set(["the","a","an","of","in","on","and","my","me","to","it","is","i","you","your","de","la","el","את","של","ו","ה"]);
+function norm(s){
+  return (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[֑-ׇ]/g,"")
+    .replace(/[ךםןףץ]/g,c=>FINALS[c])
+    .replace(/\(.*?\)|\[.*?\]/g," ").replace(/\s[-–]\s.*$/,"").replace(/\b(feat|ft|with)\b.*$/,"")
+    .replace(/&/g," and ").replace(/['’`"״׳]/g,"").replace(/[^\p{L}\p{N}]+/gu," ").replace(/^the\s+/,"").replace(/\s+/g," ").trim();
+}
+// looser skeleton: no spaces, no doubled letters, Hebrew vowel letters removed, common sound-alikes merged
+function loose(s){
+  return norm(s).replace(/\s+/g,"").replace(/[ויאהע]/g,"").replace(/ph/g,"f").replace(/ck/g,"k").replace(/[yj]/g,"i").replace(/z/g,"s").replace(/(.)\1+/g,"$1");
+}
+function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){let c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
+function tol(n){return n<=3?0:n<=5?1:n<=8?2:Math.ceil(n*0.3)}
+function closeWord(a,b){return a===b||lev(a,b)<=(b.length<=3?0:b.length<=6?1:2)}
+function fuzzy(input,answers){
+  const a=norm(input); if(!a) return false; const la=loose(input);
+  return answers.some(ans=>{
+    const b=norm(ans); if(!b) return false; if(a===b) return true;
+    if(lev(a,b)<=tol(b.length)) return true;
+    const lb=loose(ans); if(lb.length>=3 && lev(la,lb)<=tol(lb.length)) return true;
+    // word by word: every typed word is close to a word in the answer, and they cover most of it
+    const bw=b.split(" ").filter(w=>!STOP.has(w)), aw=a.split(" ").filter(w=>!STOP.has(w));
+    if(bw.length && aw.length){
+      const used=new Set(); let ok=true, cover=0;
+      for(const w of aw){ const j=bw.findIndex((x,i)=>!used.has(i)&&closeWord(w,x)); if(j<0){ok=false;break} used.add(j); cover+=bw[j].length; }
+      const total=bw.reduce((t,w)=>t+w.length,0);
+      if(ok && cover>=total*0.6) return true;
+    }
+    if(a.length>=4 && b.startsWith(a) && a.length>=b.length*0.5) return true;
+    return false;});
+}
+function artistParts(song){
+  const list=[song.a,...(song.aa||[])]; const parts=[...list];
+  list.forEach(x=>x.split(/,|&| and | x |feat\.?|ft\.?|\/|;/i).forEach(p=>{p=p.trim(); if(p.length>1){ parts.push(p);
+    // a single distinctive name is enough: "Swift", "Jackson", "Mercury", "ארצי"
+    p.split(/\s+/).forEach(w=>{ if(w.length>=4 && !STOP.has(w.toLowerCase()) && !/^(band|the|and|boys|girls)$/i.test(w)) parts.push(w); }); }}));
+  return parts;
+}
+function parseYear(v){ const m=String(v||"").match(/\d+/); if(!m) return NaN; let y=parseInt(m[0],10); if(m[0].length===2) y+= y<=30?2000:1900; return y; }
+/* ---------- Spotify player ---------- */
+let stuckTimer=null, pendingTimer=null, awaitingStart=false;
+let ctrl=null, apiReady=false, loadedUri=null, playing=false, stopTimer=null, stopAt=0, rafId=0, clipStartWall=0, clipStartPos=0, previewWarned=false, pendingPlay=false;
+window.onSpotifyIframeApiReady=(API)=>{
+  API.createController($("embed"),{width:"100%",height:80,uri:SONGS[0]?`spotify:track:${SONGS[0].id}`:""},(c)=>{
+    ctrl=c; apiReady=true; loadedUri=SONGS[0]?`spotify:track:${SONGS[0].id}`:null; hideNote();
+    c.addListener("playback_update",onUpdate);
+    c.addListener("ready",()=>{ if(pendingPlay){pendingPlay=false; clearTimeout(pendingTimer); setTimeout(freshPlay,150);} });
+  });
+};
+let embedLoading=false;
+function ensureEmbed(){ if(embedLoading) return; embedLoading=true; const sc=document.createElement("script");sc.src="https://open.spotify.com/embed/iframe-api/v1";sc.async=true;sc.onerror=()=>showNote(t("playerFail"));document.head.appendChild(sc);
+  setTimeout(()=>{if(!apiReady && S.player==="page")showNote(t("playerFail"))},12000); }
+function showNote(m){$("playerNote").textContent=m;$("playerNote").hidden=false}
+function hideNote(){$("playerNote").hidden=true}
+function curUri(){return `spotify:track:${S.queue[S.idx].id}`}
+function clipMs(){return S.bites*BITE*1000}
+function onUpdate(e){
+  const d=e.data||{};
+  if(d.duration && d.duration<=31000 && !previewWarned){previewWarned=true;showNote(t("preview"))}
+  if(!playing) return;
+  const pos=d.position||0;
+  if(awaitingStart){
+    // wait for a fresh start near 0:00; ignore stale updates from the previous clip
+    if(d.isPaused || d.isBuffering || pos>2000) return;
+    awaitingStart=false; clearTimeout(stuckTimer); if($("playerNote").textContent===t("stuck")) hideNote();
+    clipStartWall=performance.now(); clipStartPos=pos;
+    stopTimer=setTimeout(stopClip,Math.max(0,clipMs()-pos)); animate();
+    return;
+  }
+  if(pos>=clipMs()) stopClip();
+}
+function playClip(){
+  if(S.player==="app") return rcPlay(S.done);
+  if(!ctrl){showNote(apiReady?t("playerFail"):t("loading"));return}
+  stopClip(true); playing=true; awaitingStart=true; setPlayLabel(true);
+  clearTimeout(stuckTimer); stuckTimer=setTimeout(()=>{ if(playing && awaitingStart){ showNote(t("stuck")); stopClip(); } },9000);
+  // reload the track every time so playback always restarts from 0:00
+  loadedUri=curUri(); pendingPlay=true; ctrl.loadUri(loadedUri);
+  clearTimeout(pendingTimer); pendingTimer=setTimeout(()=>{ if(pendingPlay){ pendingPlay=false; freshPlay(); } },1200);
+}
+function freshPlay(){ try{ctrl.play()}catch(e){} }
+function stopClip(silent){
+  if(S.player==="app"){ rcStop(); return; }
+  if(stopTimer){clearTimeout(stopTimer);stopTimer=null}
+  cancelAnimationFrame(rafId);
+  pendingPlay=false; clearTimeout(pendingTimer); clearTimeout(stuckTimer); awaitingStart=false;
+  if(playing && ctrl){ try{ctrl.pause()}catch(e){} }
+  playing=false; setPlayLabel(false); paintCells(0);
+}
+function animate(){
+  const elapsed=clipStartPos+(performance.now()-clipStartWall);
+  paintCells(Math.min(elapsed,clipMs()));
+  if(playing) rafId=requestAnimationFrame(animate);
+}
+/* ---------- remote control of the Spotify app (Web API, PKCE login) ---------- */
+const SP={cid:"",tok:null};
+try{SP.cid=localStorage.getItem("ts_cid")||"";SP.tok=JSON.parse(localStorage.getItem("ts_tok")||"null")}catch(e){}
+function spSave(){try{localStorage.setItem("ts_cid",SP.cid);localStorage.setItem("ts_tok",JSON.stringify(SP.tok))}catch(e){}}
+const REDIRECT=location.origin+location.pathname;
+const HOSTED=/^https?:$/.test(location.protocol);
+const SCOPES="user-read-playback-state user-modify-playback-state";
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function b64url(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+async function spConnect(){
+  const v=b64url(crypto.getRandomValues(new Uint8Array(48)));
+  try{localStorage.setItem("ts_ver",v)}catch(e){}
+  const ch=b64url(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v)));
+  location.href="https://accounts.spotify.com/authorize?"+new URLSearchParams({response_type:"code",client_id:SP.cid,scope:SCOPES,redirect_uri:REDIRECT,code_challenge_method:"S256",code_challenge:ch});
+}
+async function tokenReq(params){
+  const r=await fetch("https://accounts.spotify.com/api/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams(params)});
+  return r.json().catch(()=>({}));
+}
+let connError=false;
+async function spHandleRedirect(){
+  const p=new URLSearchParams(location.search); if(!p.get("code")&&!p.get("error")) return;
+  history.replaceState(null,"",REDIRECT);
+  if(p.get("error")){connError=true;return}
+  let v=""; try{v=localStorage.getItem("ts_ver")||""}catch(e){}
+  const j=await tokenReq({grant_type:"authorization_code",code:p.get("code"),redirect_uri:REDIRECT,client_id:SP.cid,code_verifier:v});
+  if(j.access_token){SP.tok={a:j.access_token,r:j.refresh_token,exp:Date.now()+(j.expires_in-60)*1000}; spSave();} else connError=true;
+}
+async function spToken(force){
+  if(!SP.tok) return null;
+  if(!force && Date.now()<SP.tok.exp) return SP.tok.a;
+  const j=await tokenReq({grant_type:"refresh_token",refresh_token:SP.tok.r,client_id:SP.cid});
+  if(j.access_token){SP.tok={a:j.access_token,r:j.refresh_token||SP.tok.r,exp:Date.now()+(j.expires_in-60)*1000}; spSave(); return SP.tok.a}
+  SP.tok=null; spSave(); return null;
+}
+async function api(method,path,body,retried){
+  const tk=await spToken(); if(!tk) throw {code:"auth"};
+  const r=await fetch("https://api.spotify.com/v1"+path,{method,headers:Object.assign({Authorization:"Bearer "+tk},body?{"Content-Type":"application/json"}:{}),body:body?JSON.stringify(body):undefined});
+  if(r.status===401 && !retried){ await spToken(true); return api(method,path,body,true); }
+  if(r.status===204||r.status===202) return null;
+  const txt=await r.text(); let j=null; try{j=txt?JSON.parse(txt):null}catch(e){}
+  if(!r.ok) throw {code:r.status,msg:(j&&j.error&&(j.error.message||j.error))||txt};
+  return j;
+}
+async function pickDevice(){
+  const d=((await api("GET","/me/player/devices"))||{}).devices||[];
+  const ok=d.filter(x=>!x.is_restricted);
+  return (ok.find(x=>x.is_active)||ok.find(x=>x.type==="Smartphone")||ok[0]||{}).id||null;
+}
+let rcRun=0;
+function rcErr(e){
+  const m=String(e&&e.msg||"").toLowerCase();
+  if(e&&e.code==="auth") showNote(t("reconnect"));
+  else if(e&&e.code===404) showNote(t("noDevice"));
+  else if(e&&e.code===403 && /premium/.test(m)) showNote(t("needPremium"));
+  else if(e&&e.code===403) showNote(t("notAllowed"));
+  else showNote(t("stuck"));
+}
+async function rcPlay(full){
+  const my=++rcRun; clearTimeout(stopTimer); stopTimer=null; cancelAnimationFrame(rafId);
+  playing=true; setPlayLabel(true); hideNote(); paintCells(0);
+  const id=S.queue[S.idx].id;
+  try{
+    const dev=await pickDevice(); if(my!==rcRun) return;
+    if(!dev){ showNote(t("noDevice")); rcLocalStop(); return; }
+    await api("PUT","/me/player/play?device_id="+encodeURIComponent(dev),{uris:["spotify:track:"+id],position_ms:0});
+    if(full) return;
+    const t0=performance.now(); let st=null;
+    while(performance.now()-t0<9000){
+      await sleep(180); if(my!==rcRun) return;
+      const x=await api("GET","/me/player").catch(()=>null);
+      const it=x&&x.item;
+      if(x&&x.is_playing&&it&&(it.id===id||(it.linked_from&&it.linked_from.id===id)||(performance.now()-t0>1500&&x.progress_ms<4000))){st=x;break}
+    }
+    if(my!==rcRun) return;
+    if(!st){ showNote(t("noDevice")); rcStop(); return; }
+    clipStartWall=performance.now(); clipStartPos=st.progress_ms||0; animate();
+    stopTimer=setTimeout(()=>{ if(my===rcRun) rcStop(); }, Math.max(0,clipMs()-clipStartPos-250));
+  }catch(e){ if(my===rcRun){ rcErr(e); rcLocalStop(); } }
+}
+function rcLocalStop(){ clearTimeout(stopTimer); stopTimer=null; cancelAnimationFrame(rafId); playing=false; setPlayLabel(false); paintCells(0); }
+function rcStop(){ const was=playing; rcRun++; rcLocalStop(); if(was) api("PUT","/me/player/pause").catch(()=>{}); }
+function renderConnect(){
+  const app=S.player==="app";
+  $("connectBox").hidden=!app; $("pageNote").hidden=app;
+  $("redirUri").textContent=REDIRECT; $("cidInput").value=SP.cid;
+  const on=!!SP.tok;
+  $("connForm").hidden=on; $("connectBtn").hidden=on; $("disconnectBtn").hidden=!on;
+  $("connectBtn").disabled=!HOSTED||!SP.cid.trim();
+  const st=$("connStatus"); st.className="note"+(on?" ok":connError?" warn":"");
+  st.textContent=!HOSTED?t("needHost"):on?t("connected"):connError?t("connFail"):t("notConnected");
+}
+$("cidInput").oninput=e=>{SP.cid=e.target.value.trim(); spSave(); renderConnect()};
+$("connectBtn").onclick=()=>{ if(SP.cid) spConnect(); };
+$("disconnectBtn").onclick=()=>{ SP.tok=null; spSave(); renderSetup(); };
+$("copyRedir").onclick=async()=>{ try{await navigator.clipboard.writeText(REDIRECT); $("copyRedir").textContent=t("copied")}catch(e){ const r=document.createRange(); r.selectNodeContents($("redirUri")); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r);} };
+function setPlayLabel(on){$("playBtn").firstChild.textContent=on?"■ ":"▶ "}
+
+/* ---------- UI building ---------- */
+function chipGroup(el,items,isOn,onClick){
+  el.innerHTML="";
+  items.forEach(([val,label])=>{const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=label;b.setAttribute("aria-pressed",isOn(val));
+    b.onclick=()=>{onClick(val);renderSetup()};el.appendChild(b)});
+}
+function toggle(set,v){set.has(v)?set.delete(v):set.add(v)}
+function pool(){return SONGS.filter(s=>S.decades.has(s.d)&&S.cats.has(s.c))}
+function renderSetup(){
+  chipGroup($("decChips"),DECADES.map(d=>[d,S.lang==="he"?`שנות ה-${d.slice(2,4)}`.replace("ה-00","ה-2000").replace("ה-10","ה-2010").replace("ה-20","ה-2020"):`'${d.slice(2)}`]),v=>S.decades.has(v),v=>toggle(S.decades,v));
+  chipGroup($("catChips"),[["int",t("intl")],["il",t("il")]],v=>S.cats.has(v),v=>toggle(S.cats,v));
+  chipGroup($("askChips"),[["random",t("askRandom")],["song",t("song")],["artist",t("artist")],["year",t("year")],["all",t("askAll")]],v=>S.ask===v,v=>S.ask=v);
+  chipGroup($("modeChips"),[["type",t("type")],["choice",t("choice")]],v=>S.mode===v,v=>S.mode=v);
+  chipGroup($("yearChips"),[["exact",t("exact")],["partial",t("partial")]],v=>S.yearMode===v,v=>S.yearMode=v);
+  chipGroup($("roundChips"),[[10,"10"],[20,"20"],[0,t("all")]],v=>S.rounds===v,v=>S.rounds=v);
+  chipGroup($("playerChips"),[["app",t("onApp")],["page",t("onPage")]],v=>S.player===v,v=>S.player=v);
+  renderConnect();
+  const n=pool().length; $("poolNote").textContent=n?t("pool")(n)+(S.mode==="choice"?" "+t("mcNote"):""):t("poolNone"); $("startBtn").disabled=!n||(S.player==="app"&&!SP.tok);
+  if(n&&S.player==="app"&&!SP.tok) $("poolNote").textContent+=" "+t("needConnect");
+  saveSettings();
+}
+function applyLang(){
+  document.documentElement.lang=S.lang; document.documentElement.dir=S.lang==="he"?"rtl":"ltr";
+  $("langEn").setAttribute("aria-pressed",S.lang==="en"); $("langHe").setAttribute("aria-pressed",S.lang==="he");
+  $("appTitle").innerHTML=S.lang==="he"?"שלוש <b>שניות</b>":"Three <b>Seconds</b>";
+  document.querySelectorAll("[data-i18n]").forEach(el=>{const v=t(el.dataset.i18n); if(typeof v==="string") el.textContent=v;});
+  $("appSub").textContent=t("appSub");
+  renderSetup(); if(!$("game").hidden){renderRound(true)}
+}
+$("langEn").onclick=()=>{S.lang="en";applyLang()}; $("langHe").onclick=()=>{S.lang="he";applyLang()};
+
+/* ---------- game ---------- */
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function mainArtist(x){return norm(x.a.split(/,|&| and | feat/i)[0])}
+function loadPlayed(){try{return new Set(JSON.parse(localStorage.getItem("threeSecondsPlayed")||"[]"))}catch(e){return new Set()}}
+function markPlayed(id){try{const p=loadPlayed();p.add(id);localStorage.setItem("threeSecondsPlayed",JSON.stringify([...p]))}catch(e){}}
+// songs you haven't heard come first; no artist repeats within 4 songs; decades alternate where possible
+function spread(list,out){
+  const rest=shuffle(list.slice());
+  while(rest.length){
+    const recent=out.slice(-4).map(mainArtist), lastD=out.length?out[out.length-1].d:null;
+    let j=rest.findIndex(x=>!recent.includes(mainArtist(x)) && x.d!==lastD);
+    if(j<0) j=rest.findIndex(x=>!recent.includes(mainArtist(x)));
+    if(j<0) j=0;
+    out.push(rest.splice(j,1)[0]);
+  }
+  return out;
+}
+function buildQueue(list){
+  let played=loadPlayed();
+  if(list.filter(x=>!played.has(x.id)).length<Math.min(10,list.length)){ list.forEach(x=>played.delete(x.id)); try{localStorage.setItem("threeSecondsPlayed",JSON.stringify([...played]))}catch(e){} }
+  const out=[]; spread(list.filter(x=>!played.has(x.id)),out); spread(list.filter(x=>played.has(x.id)),out); return out;
+}
+function startGame(){
+  if(S.player==="page") ensureEmbed();
+  $("playerBox").hidden=S.player==="app";
+  S.queue=buildQueue(pool()); S.total=S.rounds?Math.min(S.rounds,S.queue.length):S.queue.length; S.idx=0;S.round=0;S.score=0;S.streak=0;S.history=[];
+  $("setup").hidden=true;$("end").hidden=true;$("game").hidden=false; newRound();
+}
+function newRound(){
+  if(S.player==="app"){ showNote(t("appHint")); }
+  stopClip(true); S.bites=1; S.done=false; S.pick={song:null,artist:null,year:null};
+  const KS=["song","artist","year"]; S.qs=S.ask==="all"?KS:S.ask==="random"?[KS[Math.floor(Math.random()*3)]]:[S.ask];
+  S.opts=S.mode==="choice"?buildOptions(S.queue[S.idx]):null;
+  $("mask").hidden=false; $("guessPanel").hidden=false; $("resultPanel").hidden=true;
+  renderRound(); window.scrollTo({top:0,behavior:"smooth"});
+}
+function buildCells(){
+  $("cells").innerHTML=""; $("ticks").innerHTML="";
+  for(let i=0;i<MAX_BITES;i++){const c=document.createElement("div");c.className="cell";c.innerHTML='<div class="fill"></div>';$("cells").appendChild(c);
+    const tk=document.createElement("div");tk.textContent=`${(i+1)*BITE}s`;$("ticks").appendChild(tk)}
+}
+function paintCells(ms){
+  [...$("cells").children].forEach((c,i)=>{c.classList.toggle("on",i<S.bites);const f=c.firstChild;const start=i*BITE*1000;const w=Math.max(0,Math.min(1,(ms-start)/(BITE*1000)));f.style.width=(w*100)+"%"});
+}
+function renderRound(keepInputs){
+  const n=S.total; $("sRound").textContent=`${S.round+1}/${n}`; $("sScore").textContent=S.score; $("sStreak").textContent=S.streak;
+  $("roundTag").textContent=t("songN")(S.round+1,n); $("clipTag").textContent=t("clip")(S.bites*BITE);
+  if(!$("cells").children.length) buildCells(); paintCells(0);
+  $("moreBtn").disabled=S.bites>=MAX_BITES||S.done; $("playBtn").disabled=false; $("giveUpBtn").disabled=S.done; $("skipBtn").disabled=S.done||S.idx+1>=S.queue.length;
+  $("nextBtn").textContent=S.round+1>=n?t("finish"):t("next");
+  $("guessTitle").textContent=S.qs.length>1?t("qAll"):t({song:"qSong",artist:"qArtist",year:"qYear"}[S.qs[0]]);
+  const vals=keepInputs?{song:$("inSong")?.value,artist:$("inArtist")?.value,year:$("inYear")?.value}:{};
+  renderAnswerFields(vals);
+}
+function renderAnswerFields(vals){
+  const song=S.queue[S.idx];
+  $("fSong").hidden=!S.qs.includes("song"); $("fArtist").hidden=!S.qs.includes("artist"); $("fYear").hidden=!S.qs.includes("year");
+  if(S.mode==="type"){
+    $("fSong").innerHTML=`<label class="label" for="inSong">${t("song")}</label><input id="inSong" placeholder="${t("phSong")}">`;
+    $("fArtist").innerHTML=`<label class="label" for="inArtist">${t("artist")}</label><input id="inArtist" placeholder="${t("phArtist")}">`;
+    $("fYear").innerHTML=`<label class="label" for="inYear">${t("year")}</label><input id="inYear" inputmode="numeric" maxlength="4" placeholder="${t("phYear")}">`;
+    if(vals.song)$("inSong").value=vals.song; if(vals.artist)$("inArtist").value=vals.artist; if(vals.year)$("inYear").value=vals.year;
+  } else {
+    ["song","artist","year"].forEach(k=>{
+      const box=$("f"+k[0].toUpperCase()+k.slice(1)); box.innerHTML=`<span class="label">${t(k)}</span><div class="mc ${k==="year"?"years":""}"></div>`;
+      const grid=box.querySelector(".mc");
+      S.opts[k].forEach(o=>{const b=document.createElement("button");b.type="button";b.className="opt";b.textContent=o;b.setAttribute("aria-pressed",S.pick[k]===o);
+        b.onclick=()=>{S.pick[k]=o;renderAnswerFields({})};grid.appendChild(b)});
+    });
+  }
+}
+function buildOptions(song){
+  const same=SONGS.filter(s=>s.c===song.c&&s.id!==song.id);
+  const near=shuffle(same.filter(s=>s.d===song.d)), far=shuffle(same.filter(s=>s.d!==song.d));
+  const cand=[...near,...far];
+  const titles=[song.t], artists=[song.a];
+  for(const s of cand){ if(titles.length<4 && !titles.includes(s.t)) titles.push(s.t); }
+  for(const s of cand){ if(artists.length<4 && !artists.includes(s.a)) artists.push(s.a); }
+  const years=new Set([song.y]); const offs=shuffle([-5,-4,-3,-2,-1,1,2,3,4,5]);
+  for(const o of offs){ const y=song.y+o; if(years.size<4 && y<=2026) years.add(y); }
+  return {song:shuffle(titles),artist:shuffle(artists),year:[...years].sort((a,b)=>a-b).map(String)};
+}
+$("playBtn").onclick=()=>{ if(playing){stopClip()} else {playClip()} };
+$("moreBtn").onclick=()=>{ if(S.bites<MAX_BITES){S.bites++; renderRound(true); playClip();} };
+$("giveUpBtn").onclick=()=>finishRound(true);
+$("guessForm").onsubmit=(e)=>{e.preventDefault(); finishRound(false)};
+$("nextBtn").onclick=()=>{ S.round++; S.idx++; if(S.round>=S.total||S.idx>=S.queue.length) endGame(); else newRound(); };
+$("skipBtn").onclick=()=>{ if(S.done||S.idx+1>=S.queue.length) return; stopClip(); markPlayed(S.queue[S.idx].id); S.idx++; newRound(); };
+$("startBtn").onclick=startGame;
+$("againBtn").onclick=startGame;
+$("setupBtn").onclick=()=>{ $("end").hidden=true; $("setup").hidden=false; };
+
+function finishRound(gaveUp){
+  if(S.done) return; S.done=true; stopClip();
+  const song=S.queue[S.idx]; markPlayed(song.id);
+  const P=S.qs.length>1?PTS:{song:100,artist:100,year:100}; const asked=k=>S.qs.includes(k);
+  const g=S.mode==="type"?{song:$("inSong").value.trim(),artist:$("inArtist").value.trim(),year:$("inYear").value.trim()}:{song:S.pick.song||"",artist:S.pick.artist||"",year:S.pick.year||""};
+  const mult=Math.max(0.3,1-0.1*(S.bites-1))*(S.mode==="choice"?0.6:1);
+  const res={};
+  const okSong=!gaveUp && (S.mode==="choice"?g.song===song.t:fuzzy(g.song,[song.t,...(song.tt||[])]));
+  const okArtist=!gaveUp && (S.mode==="choice"?g.artist===song.a:fuzzy(g.artist,artistParts(song)));
+  const yv=parseYear(g.year); const diff=isNaN(yv)?99:Math.abs(yv-song.y);
+  let yearFrac=0; if(!gaveUp){ if(diff===0) yearFrac=1; else if(S.yearMode==="partial" && diff===1) yearFrac=0.6; else if(S.yearMode==="partial" && diff===2) yearFrac=0.3; }
+  res.song=asked("song")&&okSong?Math.round(P.song*mult):0; res.artist=asked("artist")&&okArtist?Math.round(P.artist*mult):0; res.year=asked("year")?Math.round(P.year*yearFrac*mult):0;
+  const total=res.song+res.artist+res.year; S.score+=total;
+  const allOk=S.qs.every(k=>k==="song"?okSong:k==="artist"?okArtist:yearFrac===1);
+  S.streak=allOk?S.streak+1:0;
+  S.history.push({song,total,bites:S.bites});
+  const rows=[
+    ["song",song.t+(song.tt&&song.c==="il"?` · ${song.tt[0]}`:""),g.song,okSong?"ok":"no",res.song],
+    ["artist",song.a+(song.aa&&song.aa[0]?` · ${song.aa[0]}`:""),g.artist,okArtist?"ok":"no",res.artist],
+    ["year",String(song.y),g.year,yearFrac===1?"ok":yearFrac>0?"half":"no",res.year]];
+  const full=`${song.t}${song.tt&&song.c==="il"?" ("+song.tt[0]+")":""} — ${song.a}${song.aa&&song.c==="il"?" ("+song.aa[0]+")":""} · ${song.y}`;
+  $("resultRows").innerHTML=(S.qs.length<3?`<div class="res"><div class="what"><div class="k">${t("theSong")}</div><div class="ans">${esc(full)}</div></div></div>`:"")+rows.filter(r=>asked(r[0])).map(([k,ans,yours,cls,p])=>`<div class="res ${cls}"><div class="what"><div class="k">${t(k)}</div><div class="ans">${esc(ans)}</div><div class="yours">${t("yours")}: ${esc(yours||t("nothing"))}</div></div><div class="pts">${gaveUp?t("skipped"):(cls==="ok"?t("correct"):cls==="half"?t("close"):t("wrong"))} · +${p}</div></div>`).join("");
+  const maxR=Math.round(S.qs.reduce((a,k)=>a+P[k],0)*mult);
+  $("resultTitle").textContent=gaveUp||total===0?t("resZero"):total>=maxR*0.99?t("resGreat"):total>=maxR*0.5?t("resGood"):t("resMeh");
+  $("roundPts").textContent="+"+total;
+  $("mask").hidden=true; $("guessPanel").hidden=true; $("resultPanel").hidden=false;
+  renderRound(true);
+}
+function endGame(){
+  stopClip(); $("game").hidden=true; $("end").hidden=false;
+  $("finalScore").textContent=S.score;
+  const max=S.history.length*Math.round(100*(S.mode==="choice"?0.6:1));
+  $("finalNote").textContent=t("finalNote")(S.history.length,max);
+  $("history").innerHTML=S.history.map(h=>`<div class="hrow"><span>${esc(h.song.t)} — ${esc(h.song.a)} (${h.song.y})</span><span class="pts">${h.bites*BITE}s · +${h.total}</span></div>`).join("");
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+buildCells(); applyLang();
+spHandleRedirect().then(()=>renderSetup());
+</script>
+</body>
+</html>
